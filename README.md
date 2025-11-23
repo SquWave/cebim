@@ -6,8 +6,10 @@
 
 ## 🌟 Özellikler
 
-*   **Bulut Senkronizasyon (YENİ):** Verileriniz Firebase Firestore üzerinde güvenle saklanır. Telefonunuzda girdiğiniz veri anında bilgisayarınızda görünür.
-*   **Anahtarlı Giriş (YENİ):** Üyelik derdi yok! Kendi belirlediğiniz "Gizli Anahtar" ile her yerden verilerinize ulaşın.
+*   **QR Kod ile Giriş (YENİ):** Uzun anahtarları yazmakla uğraşmayın! Mobil cihazınızdan QR kodu taratarak saniyeler içinde giriş yapın.
+*   **Ayarlar Sayfası (YENİ):** Gizli anahtarınızı ve giriş QR kodunuzu güvenli bir şekilde görüntüleyin.
+*   **Bulut Senkronizasyon:** Verileriniz Firebase Firestore üzerinde güvenle saklanır. Telefonunuzda girdiğiniz veri anında bilgisayarınızda görünür.
+*   **Anahtarlı Giriş:** Üyelik derdi yok! Sistem tarafından üretilen "Gizli Anahtar" ile her yerden verilerinize ulaşın.
 *   **Hibrit Dashboard:** Nakit ve yatırım varlıklarınızı tek bir ekranda, net varlık olarak görüntüleyin.
 *   **Cüzdan Yönetimi:** Günlük gelir ve giderlerinizi hızlıca ekleyin, kategorize edin ve takip edin.
 *   **Yatırım Portföyü:** Hisse senedi, kripto para, altın ve döviz varlıklarınızı kaydedin.
@@ -66,16 +68,19 @@ Bu projeyi kendi bilgisayarınızda çalıştırmak için aşağıdaki adımlar�
 *   **Firebase Firestore** (Bulut Veritabanı & Senkronizasyon)
 *   **Tailwind CSS** (Tasarım)
 *   **Lucide React** (İkonlar)
+*   **QR Code & Scanner** (Hızlı Giriş)
 
 ## 🔒 Güvenlik ve Gizlilik
 
 Bu proje **"Sistem Tarafından Üretilen Güvenli Anahtar"** yöntemiyle çalışır.
 *   **Kayıt:** Sistem size özel, 24 karakterli, kırılması imkansız rastgele bir anahtar üretir.
-*   **Giriş:** Bu anahtarı kullanarak istediğiniz cihazdan verilerinize erişirsiniz.
+*   **Giriş:** Bu anahtarı kullanarak veya QR kodu taratarak istediğiniz cihazdan verilerinize erişirsiniz.
 *   **Anonimlik:** E-posta, telefon veya isim vermenize gerek yoktur.
 *   **Veri:** Verileriniz Google Firebase altyapısında, sadece anahtar sahibinin erişebileceği şekilde saklanır.
 
 > **ÖNEMLİ:** Anahtarınızı kaybederseniz verilerinizi kurtarmanın bir yolu yoktur. Lütfen anahtarınızı güvenli bir yere kaydedin.
+
+> **KAMERA ERİŞİMİ NOTU:** QR Kod ile giriş özelliği, mobil tarayıcıların güvenlik politikaları gereği sadece **HTTPS** (Güvenli Bağlantı) veya **localhost** üzerinde çalışır. Yerel ağ (IP adresi) üzerinden yapılan testlerde kamera açılmayabilir. Uygulama yayına alındığında bu sorun ortadan kalkacaktır.
 
 ---
 *Not: Bu proje bir vibe coding (yapay zeka) projesidir. Öğrenim amaçlı yapılmıştır. Herhangi bir yatırım tavsiyesi içermemektedir.*
