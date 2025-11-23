@@ -58,5 +58,4 @@ Bu projeyi kendi bilgisayarınızda çalıştırmak için aşağıdaki adımlar�
 Bu proje tamamen **istemci taraflı (client-side)** çalışır. Girdiğiniz finansal veriler, tarayıcınızın yerel depolama alanında (LocalStorage) tutulur. Tarayıcı geçmişinizi veya önbelleğinizi temizlemediğiniz sürece verileriniz korunur. Herhangi bir bulut sunucusuna veri transferi yapılmaz.
 
 ---
-*Geliştirici: SquWave*
-*Not: Bu proje bir vibe coding (yapuy zeka) projesidir. Öğrenim amaçlı yapılmıştır. Herhangi bir yatırım tavsiyesi içermemektedir.*
+*Not: Bu proje bir vibe coding (yapay zeka) projesidir. Öğrenim amaçlı yapılmıştır. Herhangi bir yatırım tavsiyesi içermemektedir.*
