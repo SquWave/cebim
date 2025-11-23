@@ -2,7 +2,7 @@
 
 **Cebim**, kişisel finans ve yatırım takibini tek bir yerde birleştiren, gizlilik odaklı ve kullanıcı dostu bir web uygulamasıdır.
 
-![Cebim Screenshot](https://i.ibb.co/35dV3bZp/Ekran-g-r-nt-s-2025-11-23-202122.png)
+<a href="https://ibb.co/6cwGMSCH"><img src="https://i.ibb.co/GfpG6DSW/Ekran-g-r-nt-s-2025-11-23-202122.png" alt="Cebim-Screenshot" border="0"></a>
 
 ## 🌟 Özellikler
 
@@ -59,3 +59,4 @@ Bu proje tamamen **istemci taraflı (client-side)** çalışır. Girdiğiniz fin
 
 ---
 *Geliştirici: SquWave*
+*Not: Bu proje bir vibe coding (yapuy zeka) projesidir. Öğrenim amaçlı yapılmıştır. Herhangi bir yatırım tavsiyesi içermemektedir.*
