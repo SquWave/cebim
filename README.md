@@ -2,8 +2,7 @@
 
 **Cebim**, kişisel finans ve yatırım takibini tek bir yerde birleştiren, gizlilik odaklı ve kullanıcı dostu bir web uygulamasıdır.
 
-![Cebim Screenshot](https://images.unsplash.com/photo-1579621970563-ebec7560ff3e?auto=format&fit=crop&q=80&w=1000)
-*(Not: Buraya kendi ekran görüntünüzü ekleyebilirsiniz)*
+![Cebim Screenshot](https://imgur.com/gq2wDVl)
 
 ## 🌟 Özellikler
 
@@ -26,7 +25,7 @@ Bu projeyi kendi bilgisayarınızda çalıştırmak için aşağıdaki adımlar�
 
 1.  **Projeyi Klonlayın:**
     ```bash
-    git clone https://github.com/kullaniciadi/cebim.git
+    git clone https://github.com/SquWave/cebim.git
     cd cebim
     ```
 
@@ -59,4 +58,4 @@ Bu projeyi kendi bilgisayarınızda çalıştırmak için aşağıdaki adımlar�
 Bu proje tamamen **istemci taraflı (client-side)** çalışır. Girdiğiniz finansal veriler, tarayıcınızın yerel depolama alanında (LocalStorage) tutulur. Tarayıcı geçmişinizi veya önbelleğinizi temizlemediğiniz sürece verileriniz korunur. Herhangi bir bulut sunucusuna veri transferi yapılmaz.
 
 ---
-*Geliştirici: Eymen*
+*Geliştirici: SquWave*
