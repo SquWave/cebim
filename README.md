@@ -1,8 +1,8 @@
-# Cebim (My Pocket) 📱💸
+# Cebim (myPocket) 📱💸
 
 **Cebim**, kişisel finans ve yatırım takibini tek bir yerde birleştiren, gizlilik odaklı ve kullanıcı dostu bir web uygulamasıdır.
 
-![Cebim Screenshot](https://imgur.com/gq2wDVl)
+![Cebim Screenshot](https://prnt.sc/PD7AJX7Ef94S)
 
 ## 🌟 Özellikler
 
