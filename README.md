@@ -6,11 +6,12 @@
 
 ## 🌟 Özellikler
 
+*   **Bulut Senkronizasyon (YENİ):** Verileriniz Firebase Firestore üzerinde güvenle saklanır. Telefonunuzda girdiğiniz veri anında bilgisayarınızda görünür.
+*   **Anahtarlı Giriş (YENİ):** Üyelik derdi yok! Kendi belirlediğiniz "Gizli Anahtar" ile her yerden verilerinize ulaşın.
 *   **Hibrit Dashboard:** Nakit ve yatırım varlıklarınızı tek bir ekranda, net varlık olarak görüntüleyin.
 *   **Cüzdan Yönetimi:** Günlük gelir ve giderlerinizi hızlıca ekleyin, kategorize edin ve takip edin.
 *   **Yatırım Portföyü:** Hisse senedi, kripto para, altın ve döviz varlıklarınızı kaydedin.
 *   **Manuel Fiyat Güncelleme:** Yatırımlarınızın anlık değerini kendiniz güncelleyerek portföyünüzü canlı tutun.
-*   **Gizlilik Odaklı (Local-First):** Tüm verileriniz **sadece tarayıcınızda (localStorage)** saklanır. Hiçbir sunucuya veri gönderilmez.
 *   **PWA Desteği:** Mobil cihazınıza uygulama olarak kurabilir ve tam ekran deneyimiyle kullanabilirsiniz.
 *   **Karanlık Mod:** Göz yormayan, modern ve şık tasarım.
 
@@ -20,6 +21,7 @@ Bu projeyi kendi bilgisayarınızda çalıştırmak için aşağıdaki adımlar�
 
 ### Gereksinimler
 *   [Node.js](https://nodejs.org/) (Sürüm 16 veya üzeri)
+*   Firebase Projesi (Kendi veritabanınızı kullanmak için)
 
 ### Adımlar
 
@@ -34,7 +36,19 @@ Bu projeyi kendi bilgisayarınızda çalıştırmak için aşağıdaki adımlar�
     npm install
     ```
 
-3.  **Uygulamayı Başlatın:**
+3.  **Firebase Ayarları:**
+    *   Kök dizinde `.env` adında bir dosya oluşturun.
+    *   Firebase konsolundan aldığınız bilgileri şu formatta ekleyin:
+        ```env
+        VITE_FIREBASE_API_KEY=your_api_key
+        VITE_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
+        VITE_FIREBASE_PROJECT_ID=your_project_id
+        VITE_FIREBASE_STORAGE_BUCKET=your_project.appspot.com
+        VITE_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
+        VITE_FIREBASE_APP_ID=your_app_id
+        ```
+
+4.  **Uygulamayı Başlatın:**
     ```bash
     npm run dev
     ```
@@ -49,13 +63,19 @@ Bu projeyi kendi bilgisayarınızda çalıştırmak için aşağıdaki adımlar�
 ## 🛠️ Teknolojiler
 
 *   **React** (Vite ile)
+*   **Firebase Firestore** (Bulut Veritabanı & Senkronizasyon)
 *   **Tailwind CSS** (Tasarım)
 *   **Lucide React** (İkonlar)
-*   **LocalStorage** (Veri Saklama)
 
 ## 🔒 Güvenlik ve Gizlilik
 
-Bu proje tamamen **istemci taraflı (client-side)** çalışır. Girdiğiniz finansal veriler, tarayıcınızın yerel depolama alanında (LocalStorage) tutulur. Tarayıcı geçmişinizi veya önbelleğinizi temizlemediğiniz sürece verileriniz korunur. Herhangi bir bulut sunucusuna veri transferi yapılmaz.
+Bu proje **"Sistem Tarafından Üretilen Güvenli Anahtar"** yöntemiyle çalışır.
+*   **Kayıt:** Sistem size özel, 24 karakterli, kırılması imkansız rastgele bir anahtar üretir.
+*   **Giriş:** Bu anahtarı kullanarak istediğiniz cihazdan verilerinize erişirsiniz.
+*   **Anonimlik:** E-posta, telefon veya isim vermenize gerek yoktur.
+*   **Veri:** Verileriniz Google Firebase altyapısında, sadece anahtar sahibinin erişebileceği şekilde saklanır.
+
+> **ÖNEMLİ:** Anahtarınızı kaybederseniz verilerinizi kurtarmanın bir yolu yoktur. Lütfen anahtarınızı güvenli bir yere kaydedin.
 
 ---
 *Not: Bu proje bir vibe coding (yapay zeka) projesidir. Öğrenim amaçlı yapılmıştır. Herhangi bir yatırım tavsiyesi içermemektedir.*

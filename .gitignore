@@ -27,3 +27,6 @@ dist-ssr
 # Personal Docs
 cebimGeliştirmeRoadmap.md
 cebimProjeDetaylarıVeGeliştirmeTaslağı.md
+
+# Environment Variables
+.env

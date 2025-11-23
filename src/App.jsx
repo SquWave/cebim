@@ -1,108 +1,113 @@
 import React, { useState } from 'react';
-import { LayoutDashboard, Wallet, TrendingUp } from 'lucide-react';
+import { LayoutDashboard, Wallet, PieChart, Settings as SettingsIcon } from 'lucide-react';
 import Dashboard from './components/Dashboard';
 import WalletComponent from './components/Wallet';
 import Portfolio from './components/Portfolio';
-import useLocalStorage from './hooks/useLocalStorage';
+import Settings from './components/Settings';
+import LoginScreen from './components/LoginScreen';
+import { AuthProvider, useAuth } from './context/AuthContext';
+import { useFirestore } from './hooks/useFirestore';
 
-function App() {
+const AuthenticatedApp = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
-  const [transactions, setTransactions] = useLocalStorage('cebim_transactions', []);
-  const [assets, setAssets] = useLocalStorage('cebim_assets', []);
+  const { user } = useAuth();
 
-  const addTransaction = (transaction) => {
-    setTransactions([transaction, ...transactions]);
-  };
-
-  const deleteTransaction = (id) => {
-    setTransactions(transactions.filter(t => t.id !== id));
-  };
-
-  const addAsset = (asset) => {
-    setAssets([...assets, asset]);
-  };
-
-  const updateAsset = (updatedAsset) => {
-    setAssets(assets.map(a => a.id === updatedAsset.id ? updatedAsset : a));
-  };
-
-  const deleteAsset = (id) => {
-    setAssets(assets.filter(a => a.id !== id));
-  };
+  // Firestore Hooks
+  const { data: transactions, add: addTransaction, remove: removeTransaction } = useFirestore('transactions');
+  const { data: assets, add: addAsset, update: updateAsset, remove: removeAsset } = useFirestore('assets');
 
   const renderContent = () => {
     switch (activeTab) {
       case 'dashboard':
         return <Dashboard transactions={transactions} assets={assets} />;
       case 'wallet':
-        return (
-          <WalletComponent
-            transactions={transactions}
-            onAddTransaction={addTransaction}
-            onDeleteTransaction={deleteTransaction}
-          />
-        );
+        return <WalletComponent transactions={transactions} onAddTransaction={addTransaction} onDeleteTransaction={removeTransaction} />;
       case 'portfolio':
-        return (
-          <Portfolio
-            assets={assets}
-            onAddAsset={addAsset}
-            onUpdateAsset={updateAsset}
-            onDeleteAsset={deleteAsset}
-          />
-        );
+        return <Portfolio assets={assets} onAddAsset={addAsset} onUpdateAsset={updateAsset} onDeleteAsset={removeAsset} />;
+      case 'settings':
+        return <Settings />;
       default:
         return <Dashboard transactions={transactions} assets={assets} />;
     }
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 font-sans selection:bg-indigo-500/30">
-      <div className="max-w-md mx-auto min-h-screen flex flex-col relative">
-        {/* Header */}
-        <header className="p-6 pb-2 sticky top-0 bg-slate-950/80 backdrop-blur-md z-10">
-          <h1 className="text-2xl font-bold bg-gradient-to-r from-indigo-400 to-emerald-400 bg-clip-text text-transparent">
+    <div className="min-h-screen bg-slate-950 text-slate-100 font-sans pb-20">
+      {/* Header */}
+      <header className="fixed top-0 left-0 right-0 bg-slate-950/80 backdrop-blur-lg border-b border-slate-800 z-10">
+        <div className="max-w-md mx-auto px-4 h-16 flex items-center justify-between">
+          <h1 className="text-xl font-bold bg-gradient-to-r from-indigo-400 to-emerald-400 bg-clip-text text-transparent">
             Cebim
           </h1>
-        </header>
-
-        {/* Main Content */}
-        <main className="flex-1 p-6 pt-4">
-          {renderContent()}
-        </main>
-
-        {/* Bottom Navigation */}
-        <nav className="fixed bottom-0 left-0 right-0 bg-slate-900/90 backdrop-blur-lg border-t border-slate-800 pb-safe">
-          <div className="max-w-md mx-auto flex justify-around p-2">
+          <div className="flex items-center gap-2">
             <button
-              onClick={() => setActiveTab('dashboard')}
-              className={`flex flex-col items-center p-2 rounded-xl transition-all ${activeTab === 'dashboard' ? 'text-indigo-400 bg-indigo-500/10' : 'text-slate-500 hover:text-slate-300'
-                }`}
+              onClick={() => setActiveTab('settings')}
+              className={`p-2 rounded-full transition-colors ${activeTab === 'settings' ? 'bg-slate-800 text-white' : 'text-slate-400 hover:text-white'}`}
             >
-              <LayoutDashboard className="w-6 h-6 mb-1" />
-              <span className="text-xs font-medium">Özet</span>
-            </button>
-            <button
-              onClick={() => setActiveTab('wallet')}
-              className={`flex flex-col items-center p-2 rounded-xl transition-all ${activeTab === 'wallet' ? 'text-indigo-400 bg-indigo-500/10' : 'text-slate-500 hover:text-slate-300'
-                }`}
-            >
-              <Wallet className="w-6 h-6 mb-1" />
-              <span className="text-xs font-medium">Cüzdan</span>
-            </button>
-            <button
-              onClick={() => setActiveTab('portfolio')}
-              className={`flex flex-col items-center p-2 rounded-xl transition-all ${activeTab === 'portfolio' ? 'text-indigo-400 bg-indigo-500/10' : 'text-slate-500 hover:text-slate-300'
-                }`}
-            >
-              <TrendingUp className="w-6 h-6 mb-1" />
-              <span className="text-xs font-medium">Portföy</span>
+              <SettingsIcon className="h-5 w-5" />
             </button>
           </div>
-        </nav>
-      </div>
+        </div>
+      </header>
+
+      {/* Main Content */}
+      <main className="pt-20 px-4 max-w-md mx-auto">
+        {renderContent()}
+      </main>
+
+      {/* Bottom Navigation */}
+      <nav className="fixed bottom-0 left-0 right-0 bg-slate-950/90 backdrop-blur-lg border-t border-slate-800 z-10 pb-safe">
+        <div className="max-w-md mx-auto flex justify-around items-center h-16">
+          <button
+            onClick={() => setActiveTab('dashboard')}
+            className={`flex flex-col items-center justify-center w-full h-full space-y-1 ${activeTab === 'dashboard' ? 'text-indigo-400' : 'text-slate-500 hover:text-slate-300'
+              }`}
+          >
+            <LayoutDashboard className="h-5 w-5" />
+            <span className="text-[10px] font-medium">Özet</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('wallet')}
+            className={`flex flex-col items-center justify-center w-full h-full space-y-1 ${activeTab === 'wallet' ? 'text-indigo-400' : 'text-slate-500 hover:text-slate-300'
+              }`}
+          >
+            <Wallet className="h-5 w-5" />
+            <span className="text-[10px] font-medium">Cüzdan</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('portfolio')}
+            className={`flex flex-col items-center justify-center w-full h-full space-y-1 ${activeTab === 'portfolio' ? 'text-indigo-400' : 'text-slate-500 hover:text-slate-300'
+              }`}
+          >
+            <PieChart className="h-5 w-5" />
+            <span className="text-[10px] font-medium">Portföy</span>
+          </button>
+        </div>
+      </nav>
     </div>
   );
-}
+};
+
+const App = () => {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
+  );
+};
+
+const AppContent = () => {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-indigo-500"></div>
+      </div>
+    );
+  }
+
+  return user ? <AuthenticatedApp /> : <LoginScreen />;
+};
 
 export default App;
