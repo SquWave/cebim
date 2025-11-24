@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, TrendingUp, RefreshCw, Trash2, Coins, Banknote, ArrowUpRight } from 'lucide-react';
+import { Plus, TrendingUp, RefreshCw, Trash2, Coins, Banknote, ArrowUpRight, PieChart } from 'lucide-react';
 import { fetchMarketData } from '../services/marketData';
 
 const Portfolio = ({ assets, onAddAsset, onUpdateAsset, onDeleteAsset }) => {
@@ -7,8 +7,9 @@ const Portfolio = ({ assets, onAddAsset, onUpdateAsset, onDeleteAsset }) => {
     const [name, setName] = useState('');
     const [amount, setAmount] = useState('');
     const [price, setPrice] = useState('');
-    const [type, setType] = useState('stock'); // stock, gold, currency
+    const [type, setType] = useState('stock'); // stock, fund, gold, currency
     const [rates, setRates] = useState(null);
+    const [specificPrices, setSpecificPrices] = useState({});
     const [loadingRates, setLoadingRates] = useState(false);
     const [lastUpdated, setLastUpdated] = useState(null);
 
@@ -18,8 +19,12 @@ const Portfolio = ({ assets, onAddAsset, onUpdateAsset, onDeleteAsset }) => {
 
     const loadRates = async () => {
         setLoadingRates(true);
-        const data = await fetchMarketData();
+        // Pass current assets to fetch specific prices (stocks/funds)
+        const data = await fetchMarketData(assets);
         setRates(data);
+        if (data.specificPrices) {
+            setSpecificPrices(data.specificPrices);
+        }
         setLastUpdated(new Date());
         setLoadingRates(false);
     };
@@ -32,11 +37,21 @@ const Portfolio = ({ assets, onAddAsset, onUpdateAsset, onDeleteAsset }) => {
             let newPrice = null;
             const assetName = asset.name.toUpperCase();
 
+            // Currency Updates
             if (asset.type === 'currency') {
                 if (assetName.includes('USD') || assetName.includes('DOLAR')) newPrice = rates.USD;
-                if (assetName.includes('EUR') || assetName.includes('EURO')) newPrice = rates.EUR;
-            } else if (asset.type === 'gold') {
+                else if (assetName.includes('EUR') || assetName.includes('EURO')) newPrice = rates.EUR;
+                else if (assetName.includes('GBP') || assetName.includes('STERLIN')) newPrice = rates.GBP;
+                else if (assetName.includes('CHF') || assetName.includes('FRANG')) newPrice = rates.CHF;
+                else if (assetName.includes('CAD') || assetName.includes('KANADA')) newPrice = rates.CAD;
+            }
+            // Gold Updates
+            else if (asset.type === 'gold') {
                 if (assetName.includes('ALTIN') || assetName.includes('GOLD')) newPrice = rates.GOLD;
+            }
+            // Stock & Fund Updates (from specificPrices)
+            else if ((asset.type === 'stock' || asset.type === 'fund') && specificPrices[assetName]) {
+                newPrice = specificPrices[assetName];
             }
 
             if (newPrice) {
@@ -48,7 +63,7 @@ const Portfolio = ({ assets, onAddAsset, onUpdateAsset, onDeleteAsset }) => {
         if (updatedCount > 0) {
             alert(`${updatedCount} varlığın fiyatı güncel piyasa verileriyle yenilendi.`);
         } else {
-            alert('Güncellenebilecek uygun varlık bulunamadı (USD, EUR veya Altın).');
+            alert('Güncellenebilecek uygun varlık bulunamadı veya veri çekilemedi.');
         }
     };
 
@@ -58,7 +73,7 @@ const Portfolio = ({ assets, onAddAsset, onUpdateAsset, onDeleteAsset }) => {
 
         onAddAsset({
             id: Date.now(),
-            name,
+            name: name.toUpperCase(),
             amount: Number(amount),
             price: Number(price),
             type,
@@ -112,18 +127,22 @@ const Portfolio = ({ assets, onAddAsset, onUpdateAsset, onDeleteAsset }) => {
 
             {/* Market Rates Ticker */}
             {rates && (
-                <div className="grid grid-cols-3 gap-2 mb-6">
-                    <div className="bg-slate-900 border border-slate-800 p-3 rounded-xl flex flex-col items-center">
-                        <span className="text-xs text-slate-500 mb-1">Dolar (USD)</span>
-                        <span className="text-sm font-bold text-emerald-400">{rates.USD.toFixed(2)} ₺</span>
+                <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 mb-6 overflow-x-auto pb-2">
+                    <div className="bg-slate-900 border border-slate-800 p-3 rounded-xl flex flex-col items-center min-w-[80px]">
+                        <span className="text-xs text-slate-500 mb-1">USD</span>
+                        <span className="text-sm font-bold text-emerald-400">{rates.USD?.toFixed(2)} ₺</span>
                     </div>
-                    <div className="bg-slate-900 border border-slate-800 p-3 rounded-xl flex flex-col items-center">
-                        <span className="text-xs text-slate-500 mb-1">Euro (EUR)</span>
-                        <span className="text-sm font-bold text-emerald-400">{rates.EUR.toFixed(2)} ₺</span>
+                    <div className="bg-slate-900 border border-slate-800 p-3 rounded-xl flex flex-col items-center min-w-[80px]">
+                        <span className="text-xs text-slate-500 mb-1">EUR</span>
+                        <span className="text-sm font-bold text-emerald-400">{rates.EUR?.toFixed(2)} ₺</span>
                     </div>
-                    <div className="bg-slate-900 border border-slate-800 p-3 rounded-xl flex flex-col items-center">
-                        <span className="text-xs text-slate-500 mb-1">Gram Altın</span>
-                        <span className="text-sm font-bold text-amber-400">{rates.GOLD.toFixed(0)} ₺</span>
+                    <div className="bg-slate-900 border border-slate-800 p-3 rounded-xl flex flex-col items-center min-w-[80px]">
+                        <span className="text-xs text-slate-500 mb-1">Altın</span>
+                        <span className="text-sm font-bold text-amber-400">{rates.GOLD?.toFixed(0)} ₺</span>
+                    </div>
+                    <div className="bg-slate-900 border border-slate-800 p-3 rounded-xl flex flex-col items-center min-w-[80px]">
+                        <span className="text-xs text-slate-500 mb-1">GBP</span>
+                        <span className="text-sm font-bold text-emerald-400">{rates.GBP?.toFixed(2)} ₺</span>
                     </div>
                 </div>
             )}
@@ -141,16 +160,16 @@ const Portfolio = ({ assets, onAddAsset, onUpdateAsset, onDeleteAsset }) => {
 
             {isAdding && (
                 <form onSubmit={handleSubmit} className="mb-6 p-4 bg-slate-900 rounded-xl border border-slate-800 animate-in fade-in slide-in-from-top-4">
-                    <div className="grid grid-cols-3 gap-2 mb-4">
-                        {['stock', 'gold', 'currency'].map((t) => (
+                    <div className="grid grid-cols-4 gap-2 mb-4">
+                        {['stock', 'fund', 'gold', 'currency'].map((t) => (
                             <button
                                 key={t}
                                 type="button"
                                 onClick={() => setType(t)}
-                                className={`py-2 rounded-lg text-sm font-medium capitalize transition-colors ${type === t ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/50' : 'bg-slate-800 text-slate-400'
+                                className={`py-2 rounded-lg text-xs sm:text-sm font-medium capitalize transition-colors ${type === t ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/50' : 'bg-slate-800 text-slate-400'
                                     }`}
                             >
-                                {t === 'stock' ? 'Hisse' : t === 'gold' ? 'Altın' : 'Döviz'}
+                                {t === 'stock' ? 'Hisse' : t === 'fund' ? 'Fon' : t === 'gold' ? 'Altın' : 'Döviz'}
                             </button>
                         ))}
                     </div>
@@ -158,10 +177,10 @@ const Portfolio = ({ assets, onAddAsset, onUpdateAsset, onDeleteAsset }) => {
                     <div className="space-y-3">
                         <input
                             type="text"
-                            placeholder="Varlık Adı (örn: USD, Gram Altın)"
+                            placeholder={type === 'stock' ? "Hisse Kodu (örn: THYAO)" : type === 'fund' ? "Fon Kodu (örn: MAC)" : "Varlık Adı (örn: USD)"}
                             value={name}
                             onChange={(e) => setName(e.target.value)}
-                            className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+                            className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 uppercase"
                             required
                         />
                         <div className="flex gap-3">
@@ -204,16 +223,18 @@ const Portfolio = ({ assets, onAddAsset, onUpdateAsset, onDeleteAsset }) => {
                                 <div className="flex items-center gap-3">
                                     <div className={`p-2 rounded-lg ${asset.type === 'gold' ? 'bg-amber-500/10 text-amber-400' :
                                             asset.type === 'currency' ? 'bg-emerald-500/10 text-emerald-400' :
-                                                'bg-indigo-500/10 text-indigo-400'
+                                                asset.type === 'fund' ? 'bg-blue-500/10 text-blue-400' :
+                                                    'bg-indigo-500/10 text-indigo-400'
                                         }`}>
                                         {asset.type === 'gold' ? <Coins className="w-5 h-5" /> :
                                             asset.type === 'currency' ? <Banknote className="w-5 h-5" /> :
-                                                <TrendingUp className="w-5 h-5" />}
+                                                asset.type === 'fund' ? <PieChart className="w-5 h-5" /> :
+                                                    <TrendingUp className="w-5 h-5" />}
                                     </div>
                                     <div>
                                         <div className="font-bold text-white text-lg">{asset.name}</div>
                                         <div className="text-xs text-slate-400 capitalize">
-                                            {asset.type === 'stock' ? 'Hisse Senedi' : asset.type === 'gold' ? 'Altın/Emtia' : 'Döviz'}
+                                            {asset.type === 'stock' ? 'Hisse Senedi' : asset.type === 'fund' ? 'Yatırım Fonu' : asset.type === 'gold' ? 'Altın/Emtia' : 'Döviz'}
                                         </div>
                                     </div>
                                 </div>

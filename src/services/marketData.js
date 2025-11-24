@@ -1,52 +1,101 @@
+// Free API for currencies
+// We fetch base=TRY to get 1 TRY = X USD. Then we invert to get 1 USD = Y TRY.
+const CURRENCY_API_URL = 'https://api.frankfurter.app/latest?from=TRY&to=USD,EUR,GBP,CHF,CAD';
 
-// Free API for currencies (USD, EUR)
-const CURRENCY_API_URL = 'https://api.frankfurter.app/latest?from=TRY&to=USD,EUR';
-
-// Fallback manual rates in case API fails
+// Fallback manual rates
 const FALLBACK_RATES = {
     USD: 34.50,
     EUR: 36.20,
-    GOLD: 2950.00 // Gram Altın (TRY)
+    GBP: 43.50,
+    CHF: 39.00,
+    CAD: 24.80,
+    GOLD: 2950.00 // Gram Altın
 };
 
-export const fetchMarketData = async () => {
+// Helper to fetch BIST data (Yahoo Finance)
+// Note: Direct browser calls to Yahoo Finance often fail due to CORS. 
+// In a real production app, this should go through a backend proxy.
+const fetchStockPrice = async (code) => {
     try {
-        // 1. Fetch Currency Rates (USD/TRY, EUR/TRY)
-        // Frankfurter API gives rates relative to base. 
-        // If base is TRY, it gives how many USD is 1 TRY (e.g. 0.03). 
-        // We want how many TRY is 1 USD. So we fetch from USD,EUR to TRY.
-        const currencyResponse = await fetch('https://api.frankfurter.app/latest?from=USD&to=TRY');
-        const eurResponse = await fetch('https://api.frankfurter.app/latest?from=EUR&to=TRY');
+        const symbol = code.toUpperCase().endsWith('.IS') ? code.toUpperCase() : `${code.toUpperCase()}.IS`;
+        // Using a public CORS proxy for demo purposes. 
+        // If this fails, we return null so user can enter manually.
+        const response = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&range=1d`);
+        const data = await response.json();
+        const price = data.chart.result[0].meta.regularMarketPrice;
+        return price;
+    } catch (e) {
+        console.warn(`Failed to fetch stock price for ${code}`, e);
+        return null;
+    }
+};
 
-        const usdData = await currencyResponse.json();
-        const eurData = await eurResponse.json();
+// Helper to fetch Fund data (TEFAS via proxy or fallback)
+const fetchFundPrice = async (code) => {
+    try {
+        // TEFAS data is hard to get directly. 
+        // For this MVP, we will try to fetch from a public financial data endpoint if available.
+        // Currently simulating a fetch or using a mock for common funds.
+        // In a real app, we would scrape TEFAS or use a paid API.
 
-        // 2. Fetch Gold Prices
-        // Finding a free, CORS-friendly Gold API is hard. 
-        // For this MVP, we will try to fetch from a public JSON if available, 
-        // otherwise we might need to use a proxy or fallback.
-        // Let's use a mock fetch for gold for now or a known free endpoint if possible.
-        // Since reliable free Gold APIs are scarce, we'll use a fixed estimated rate for now 
-        // or try to scrape/fetch from a benign source if possible. 
-        // For stability, we will use a hardcoded value for Gold in this iteration 
-        // but structure it so it can be easily replaced.
+        // Mocking some popular funds for demonstration
+        const MOCK_FUNDS = {
+            'MAC': 0.5423,
+            'TTE': 4.2312,
+            'AFT': 0.8912,
+            'YAS': 1.2345
+        };
 
-        // Simulating Gold API fetch
-        const goldRate = FALLBACK_RATES.GOLD;
+        return MOCK_FUNDS[code.toUpperCase()] || null;
+    } catch (e) {
+        console.warn(`Failed to fetch fund price for ${code}`, e);
+        return null;
+    }
+};
+
+export const fetchMarketData = async (assets = []) => {
+    try {
+        // 1. Fetch Currency Rates
+        const currencyResponse = await fetch(CURRENCY_API_URL);
+        const currencyData = await currencyResponse.json();
+        const rates = currencyData.rates; // 1 TRY = X Currency
+
+        const marketData = {
+            USD: 1 / rates.USD,
+            EUR: 1 / rates.EUR,
+            GBP: 1 / rates.GBP,
+            CHF: 1 / rates.CHF,
+            CAD: 1 / rates.CAD,
+            GOLD: FALLBACK_RATES.GOLD, // Still using fallback for Gold
+            lastUpdated: new Date().toISOString()
+        };
+
+        // 2. Fetch Specific Asset Prices (Stocks & Funds)
+        // We only fetch for assets that are currently in the portfolio to save bandwidth
+        const specificPrices = {};
+
+        for (const asset of assets) {
+            if (asset.type === 'stock' && asset.name) {
+                const price = await fetchStockPrice(asset.name);
+                if (price) specificPrices[asset.name.toUpperCase()] = price;
+            }
+            if (asset.type === 'fund' && asset.name) {
+                const price = await fetchFundPrice(asset.name);
+                if (price) specificPrices[asset.name.toUpperCase()] = price;
+            }
+        }
 
         return {
-            USD: usdData.rates.TRY,
-            EUR: eurData.rates.TRY,
-            GOLD: goldRate,
-            lastUpdated: new Date().toISOString()
+            ...marketData,
+            specificPrices,
+            error: false
         };
 
     } catch (error) {
         console.error("Market data fetch failed:", error);
         return {
-            USD: FALLBACK_RATES.USD,
-            EUR: FALLBACK_RATES.EUR,
-            GOLD: FALLBACK_RATES.GOLD,
+            ...FALLBACK_RATES,
+            specificPrices: {},
             lastUpdated: new Date().toISOString(),
             error: true
         };
