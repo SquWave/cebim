@@ -62,6 +62,7 @@ const Portfolio = ({ assets, onAddAsset, onUpdateAsset, onDeleteAsset }) => {
     const updateAssetPrices = () => {
         if (!rates) return;
         let updatedCount = 0;
+        let errorCount = 0;
 
         assets.forEach(asset => {
             let newPrice = null;
@@ -81,13 +82,17 @@ const Portfolio = ({ assets, onAddAsset, onUpdateAsset, onDeleteAsset }) => {
             if (newPrice) {
                 onUpdateAsset({ ...asset, price: newPrice });
                 updatedCount++;
+            } else {
+                errorCount++;
             }
         });
 
         if (updatedCount > 0) {
             alert(`${updatedCount} varlığın fiyatı güncel piyasa verileriyle yenilendi.`);
+        } else if (errorCount > 0) {
+            alert('Bazı varlıkların güncel fiyatına ulaşılamadı. Lütfen internet bağlantınızı kontrol edin veya daha sonra tekrar deneyin.');
         } else {
-            alert('Güncellenebilecek uygun varlık bulunamadı veya veri çekilemedi.');
+            alert('Güncellenebilecek uygun varlık bulunamadı.');
         }
     };
 
@@ -101,6 +106,9 @@ const Portfolio = ({ assets, onAddAsset, onUpdateAsset, onDeleteAsset }) => {
         if (type === 'currency' && rates) {
             if (name === 'USD') initialPrice = rates.USD;
             else if (name === 'EUR') initialPrice = rates.EUR;
+        }
+        else if (type === 'gold' && rates) {
+            initialPrice = rates.GOLD;
         }
         // If it's a stock, try to fetch the current price immediately
         else if (type === 'stock' && rates && rates.specificPrices) {
@@ -183,15 +191,21 @@ const Portfolio = ({ assets, onAddAsset, onUpdateAsset, onDeleteAsset }) => {
                 <div className="grid grid-cols-3 gap-2 mb-6">
                     <div className="bg-slate-900 border border-slate-800 p-3 rounded-xl flex flex-col items-center">
                         <span className="text-xs text-slate-500 mb-1">USD</span>
-                        <span className="text-sm font-bold text-emerald-400">{rates.USD?.toFixed(2)} ₺</span>
+                        <span className="text-sm font-bold text-emerald-400">
+                            {rates.USD ? `${rates.USD.toFixed(2)} ₺` : <span className="text-rose-500 text-xs">Veri Yok</span>}
+                        </span>
                     </div>
                     <div className="bg-slate-900 border border-slate-800 p-3 rounded-xl flex flex-col items-center">
                         <span className="text-xs text-slate-500 mb-1">EUR</span>
-                        <span className="text-sm font-bold text-emerald-400">{rates.EUR?.toFixed(2)} ₺</span>
+                        <span className="text-sm font-bold text-emerald-400">
+                            {rates.EUR ? `${rates.EUR.toFixed(2)} ₺` : <span className="text-rose-500 text-xs">Veri Yok</span>}
+                        </span>
                     </div>
                     <div className="bg-slate-900 border border-slate-800 p-3 rounded-xl flex flex-col items-center">
-                        <span className="text-xs text-slate-500 mb-1">Altın</span>
-                        <span className="text-sm font-bold text-amber-400">{rates.GOLD?.toFixed(0)} ₺</span>
+                        <span className="text-xs text-slate-500 mb-1">Gram Altın</span>
+                        <span className="text-sm font-bold text-amber-400">
+                            {rates.GOLD ? `${rates.GOLD.toFixed(0)} ₺` : <span className="text-rose-500 text-xs">Veri Yok</span>}
+                        </span>
                     </div>
                 </div>
             )}
@@ -214,11 +228,15 @@ const Portfolio = ({ assets, onAddAsset, onUpdateAsset, onDeleteAsset }) => {
                             <button
                                 key={t}
                                 type="button"
-                                onClick={() => setType(t)}
+                                onClick={() => {
+                                    setType(t);
+                                    if (t === 'gold') setName('Gram Altın');
+                                    else setName('');
+                                }}
                                 className={`py-2 rounded-lg text-xs sm:text-sm font-medium capitalize transition-colors ${type === t ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/50' : 'bg-slate-800 text-slate-400'
                                     }`}
                             >
-                                {t === 'stock' ? 'Hisse' : t === 'fund' ? 'Fon' : t === 'gold' ? 'Altın' : 'Döviz'}
+                                {t === 'stock' ? 'Hisse' : t === 'fund' ? 'Fon' : t === 'gold' ? 'Gram Altın' : 'Döviz'}
                             </button>
                         ))}
                     </div>
@@ -236,6 +254,13 @@ const Portfolio = ({ assets, onAddAsset, onUpdateAsset, onDeleteAsset }) => {
                                     <option value="USD">USD</option>
                                     <option value="EUR">EUR</option>
                                 </select>
+                            ) : type === 'gold' ? (
+                                <input
+                                    type="text"
+                                    value="Gram Altın"
+                                    readOnly
+                                    className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-slate-400 focus:outline-none cursor-not-allowed"
+                                />
                             ) : (
                                 <>
                                     <input
@@ -321,7 +346,7 @@ const Portfolio = ({ assets, onAddAsset, onUpdateAsset, onDeleteAsset }) => {
                                         <div>
                                             <div className="font-bold text-white text-lg">{asset.name}</div>
                                             <div className="text-xs text-slate-400 capitalize">
-                                                {asset.type === 'stock' ? 'Hisse Senedi' : asset.type === 'fund' ? 'Yatırım Fonu' : asset.type === 'gold' ? 'Altın/Emtia' : 'Döviz'}
+                                                {asset.type === 'stock' ? 'Hisse Senedi' : asset.type === 'fund' ? 'Yatırım Fonu' : asset.type === 'gold' ? 'Gram Altın' : 'Döviz'}
                                             </div>
                                         </div>
                                     </div>

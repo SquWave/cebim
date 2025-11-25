@@ -108,21 +108,28 @@ const fetchFundPrice = async (code) => {
 
 export const fetchMarketData = async (assets = []) => {
     try {
-        // 1. Fetch FX rates (USDTRY, EURTRY)
+        // 1. Fetch FX rates (USDTRY, EURTRY, GAUTRY)
         const fxResponse = await fetch(CURRENCY_API_URL);
         const fxData = await fxResponse.json();
-        let usdRate = FALLBACK_RATES.USD;
-        let eurRate = FALLBACK_RATES.EUR;
+
+        let usdRate = null;
+        let eurRate = null;
+        let goldRate = null;
+
         if (Array.isArray(fxData)) {
             const usdEntry = fxData.find(item => item.Code === 'USDTRY');
             const eurEntry = fxData.find(item => item.Code === 'EURTRY');
+            const goldEntry = fxData.find(item => item.Code === 'GAUTRY'); // Gram Altın
+
             if (usdEntry && typeof usdEntry.Last === 'number') usdRate = usdEntry.Last;
             if (eurEntry && typeof eurEntry.Last === 'number') eurRate = eurEntry.Last;
+            if (goldEntry && typeof goldEntry.Last === 'number') goldRate = goldEntry.Last;
         }
+
         const marketData = {
             USD: usdRate,
             EUR: eurRate,
-            GOLD: FALLBACK_RATES.GOLD,
+            GOLD: goldRate,
             lastUpdated: new Date().toISOString()
         };
 
@@ -155,7 +162,9 @@ export const fetchMarketData = async (assets = []) => {
     } catch (error) {
         console.error("Market data fetch failed:", error);
         return {
-            ...FALLBACK_RATES,
+            USD: null,
+            EUR: null,
+            GOLD: null,
             specificPrices: {},
             lastUpdated: new Date().toISOString(),
             error: true

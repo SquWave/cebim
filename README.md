@@ -6,17 +6,19 @@
 
 ## 🌟 Özellikler
 
-*   **QR Kod ile Giriş (YENİ):** Uzun anahtarları yazmakla uğraşmayın! Mobil cihazınızdan QR kodu taratarak saniyeler içinde giriş yapın.
-*   **Canlı Borsa Verileri (YENİ):** Midas API entegrasyonu ile BIST hisse senetleri ve fon fiyatlarını canlı takip edin.
-*   **Canlı Döviz Kurları (YENİ):** USD ve EUR kurlarını anlık olarak görüntüleyin ve portföyünüzü güncel tutun.
-*   **Akıllı Otomatik Tamamlama:** Hisse senedi ve fon kodlarını ararken anında öneriler alın.
+*   **QR Kod ile Giriş:** Uzun anahtarları yazmakla uğraşmayın! Mobil cihazınızdan QR kodu taratarak saniyeler içinde giriş yapın.
+*   **Canlı Borsa Verileri:** Midas API entegrasyonu ile BIST hisse senetleri ve fon fiyatlarını canlı takip edin.
+*   **Canlı Döviz Kurları:** USD ve EUR kurlarını anlık olarak görüntüleyin ve portföyünüzü güncel tutun.
+*   **Canlı Gram Altın Fiyatı:** Midas API üzerinden anlık gram altın fiyatlarını takip edin.
+*   **Akıllı Otomatik Tamamlama:** Hisse senedi kodlarını ararken anında öneriler alın.
 *   **Kâr/Zarar Analizi:** Varlıklarınızın maliyet ve güncel değerini karşılaştırarak net kâr/zarar durumunuzu görün.
+*   **Güvenilir Veri Gösterimi:** Canlı veri alınamadığında yanıltıcı bilgiler yerine açık hata mesajları görürsünüz.
 *   **Ayarlar Sayfası:** Gizli anahtarınızı ve giriş QR kodunuzu güvenli bir şekilde görüntüleyin.
 *   **Bulut Senkronizasyon:** Verileriniz Firebase Firestore üzerinde güvenle saklanır. Telefonunuzda girdiğiniz veri anında bilgisayarınızda görünür.
 *   **Anahtarlı Giriş:** Üyelik derdi yok! Sistem tarafından üretilen "Gizli Anahtar" ile her yerden verilerinize ulaşın.
 *   **Hibrit Dashboard:** Nakit ve yatırım varlıklarınızı tek bir ekranda, net varlık olarak görüntüleyin.
 *   **Cüzdan Yönetimi:** Günlük gelir ve giderlerinizi hızlıca ekleyin, kategorize edin ve takip edin.
-*   **Yatırım Portföyü:** Hisse senedi, kripto para, altın ve döviz varlıklarınızı kaydedin.
+*   **Yatırım Portföyü:** Hisse senedi, yatırım fonu, gram altın ve döviz varlıklarınızı kaydedin.
 *   **PWA Desteği:** Mobil cihazınıza uygulama olarak kurabilir ve tam ekran deneyimiyle kullanabilirsiniz.
 *   **Karanlık Mod:** Göz yormayan, modern ve şık tasarım.
 
@@ -75,11 +77,16 @@ Bu projeyi kendi bilgisayarınızda çalıştırmak için aşağıdaki adımlar�
 
 ## 🛠️ Teknolojiler
 
+### Frontend
 *   **React** (Vite ile)
-*   **Firebase Firestore** (Bulut Veritabanı & Senkronizasyon)
 *   **Tailwind CSS** (Tasarım)
 *   **Lucide React** (İkonlar)
 *   **QR Code & Scanner** (Hızlı Giriş)
+
+### Backend & Veri
+*   **Node.js + Express** (Backend Proxy Sunucusu)
+*   **Midas API** (Canlı Borsa, Döviz ve Altın Verileri)
+*   **Firebase Firestore** (Bulut Veritabanı & Senkronizasyon)
 
 ## 🔒 Güvenlik ve Gizlilik
 
