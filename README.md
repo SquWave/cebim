@@ -7,13 +7,16 @@
 ## 🌟 Özellikler
 
 *   **QR Kod ile Giriş (YENİ):** Uzun anahtarları yazmakla uğraşmayın! Mobil cihazınızdan QR kodu taratarak saniyeler içinde giriş yapın.
-*   **Ayarlar Sayfası (YENİ):** Gizli anahtarınızı ve giriş QR kodunuzu güvenli bir şekilde görüntüleyin.
+*   **Canlı Borsa Verileri (YENİ):** Midas API entegrasyonu ile BIST hisse senetleri ve fon fiyatlarını canlı takip edin.
+*   **Canlı Döviz Kurları (YENİ):** USD ve EUR kurlarını anlık olarak görüntüleyin ve portföyünüzü güncel tutun.
+*   **Akıllı Otomatik Tamamlama:** Hisse senedi ve fon kodlarını ararken anında öneriler alın.
+*   **Kâr/Zarar Analizi:** Varlıklarınızın maliyet ve güncel değerini karşılaştırarak net kâr/zarar durumunuzu görün.
+*   **Ayarlar Sayfası:** Gizli anahtarınızı ve giriş QR kodunuzu güvenli bir şekilde görüntüleyin.
 *   **Bulut Senkronizasyon:** Verileriniz Firebase Firestore üzerinde güvenle saklanır. Telefonunuzda girdiğiniz veri anında bilgisayarınızda görünür.
 *   **Anahtarlı Giriş:** Üyelik derdi yok! Sistem tarafından üretilen "Gizli Anahtar" ile her yerden verilerinize ulaşın.
 *   **Hibrit Dashboard:** Nakit ve yatırım varlıklarınızı tek bir ekranda, net varlık olarak görüntüleyin.
 *   **Cüzdan Yönetimi:** Günlük gelir ve giderlerinizi hızlıca ekleyin, kategorize edin ve takip edin.
 *   **Yatırım Portföyü:** Hisse senedi, kripto para, altın ve döviz varlıklarınızı kaydedin.
-*   **Manuel Fiyat Güncelleme:** Yatırımlarınızın anlık değerini kendiniz güncelleyerek portföyünüzü canlı tutun.
 *   **PWA Desteği:** Mobil cihazınıza uygulama olarak kurabilir ve tam ekran deneyimiyle kullanabilirsiniz.
 *   **Karanlık Mod:** Göz yormayan, modern ve şık tasarım.
 
@@ -22,7 +25,7 @@
 Bu projeyi kendi bilgisayarınızda çalıştırmak için aşağıdaki adımları izleyin:
 
 ### Gereksinimler
-*   [Node.js](https://nodejs.org/) (Sürüm 16 veya üzeri)
+*   [Node.js](https://nodejs.org/) (Sürüm 16 veya üzeri - Tercihen v20+)
 *   Firebase Projesi (Kendi veritabanınızı kullanmak için)
 
 ### Adımlar
@@ -51,9 +54,17 @@ Bu projeyi kendi bilgisayarınızda çalıştırmak için aşağıdaki adımlar�
         ```
 
 4.  **Uygulamayı Başlatın:**
+    
+    Bu proje, canlı verileri çekmek için yerel bir backend sunucusuna ihtiyaç duyar. Hem frontend hem de backend'i tek komutla başlatmak için:
+
     ```bash
-    npm run dev
+    npm run dev:all
     ```
+    
+    Alternatif olarak ayrı ayrı çalıştırmak isterseniz:
+    *   **Backend:** `npm run server` (Port: 3001)
+    *   **Frontend:** `npm run dev` (Port: 5173)
+
     Terminalde çıkan linke (örn: `http://localhost:5173`) tıklayarak uygulamayı açın.
 
 ## 📱 Mobil Kurulum (PWA)

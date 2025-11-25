@@ -1,25 +1,55 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, TrendingUp, RefreshCw, Trash2, Coins, Banknote, ArrowUpRight, PieChart } from 'lucide-react';
-import { fetchMarketData } from '../services/marketData';
+import { Plus, TrendingUp, RefreshCw, Trash2, Coins, Banknote, ArrowUpRight, PieChart, Search } from 'lucide-react';
+import { fetchMarketData, searchStocks, TEFAS_FUNDS } from '../services/marketData';
 
 const Portfolio = ({ assets, onAddAsset, onUpdateAsset, onDeleteAsset }) => {
     const [isAdding, setIsAdding] = useState(false);
     const [name, setName] = useState('');
     const [amount, setAmount] = useState('');
-    const [price, setPrice] = useState('');
+    const [cost, setCost] = useState(''); // Unit Cost (Maliyet)
     const [type, setType] = useState('stock'); // stock, fund, gold, currency
     const [rates, setRates] = useState(null);
     const [specificPrices, setSpecificPrices] = useState({});
     const [loadingRates, setLoadingRates] = useState(false);
     const [lastUpdated, setLastUpdated] = useState(null);
 
+    // Autocomplete State
+    const [suggestions, setSuggestions] = useState([]);
+    const [showSuggestions, setShowSuggestions] = useState(false);
+
     useEffect(() => {
         loadRates();
     }, []);
 
+    // Autocomplete Logic
+    useEffect(() => {
+        if (!name || (type !== 'stock' && type !== 'fund')) {
+            setSuggestions([]);
+            return;
+        }
+
+        const query = name.toUpperCase();
+
+        const fetchSuggestions = async () => {
+            if (type === 'stock') {
+                const results = await searchStocks(query);
+                setSuggestions(results);
+                if (results.length > 0) setShowSuggestions(true);
+            } else {
+                const filtered = TEFAS_FUNDS.filter(item =>
+                    item.code.startsWith(query) || item.name.toUpperCase().includes(query)
+                ).slice(0, 5);
+                setSuggestions(filtered);
+                if (filtered.length > 0) setShowSuggestions(true);
+            }
+        };
+
+        const timeoutId = setTimeout(fetchSuggestions, 300); // Debounce
+        return () => clearTimeout(timeoutId);
+    }, [name, type]);
+
     const loadRates = async () => {
         setLoadingRates(true);
-        // Pass current assets to fetch specific prices (stocks/funds)
         const data = await fetchMarketData(assets);
         setRates(data);
         if (data.specificPrices) {
@@ -37,19 +67,13 @@ const Portfolio = ({ assets, onAddAsset, onUpdateAsset, onDeleteAsset }) => {
             let newPrice = null;
             const assetName = asset.name.toUpperCase();
 
-            // Currency Updates
             if (asset.type === 'currency') {
                 if (assetName.includes('USD') || assetName.includes('DOLAR')) newPrice = rates.USD;
                 else if (assetName.includes('EUR') || assetName.includes('EURO')) newPrice = rates.EUR;
-                else if (assetName.includes('GBP') || assetName.includes('STERLIN')) newPrice = rates.GBP;
-                else if (assetName.includes('CHF') || assetName.includes('FRANG')) newPrice = rates.CHF;
-                else if (assetName.includes('CAD') || assetName.includes('KANADA')) newPrice = rates.CAD;
             }
-            // Gold Updates
             else if (asset.type === 'gold') {
                 if (assetName.includes('ALTIN') || assetName.includes('GOLD')) newPrice = rates.GOLD;
             }
-            // Stock & Fund Updates (from specificPrices)
             else if ((asset.type === 'stock' || asset.type === 'fund') && specificPrices[assetName]) {
                 newPrice = specificPrices[assetName];
             }
@@ -67,33 +91,62 @@ const Portfolio = ({ assets, onAddAsset, onUpdateAsset, onDeleteAsset }) => {
         }
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        if (!name || !amount || !price) return;
+        if (!name || !amount || !cost) return;
+
+        let initialPrice = Number(cost);
+
+        // For currency assets, use live FX rate instead of cost
+        if (type === 'currency' && rates) {
+            if (name === 'USD') initialPrice = rates.USD;
+            else if (name === 'EUR') initialPrice = rates.EUR;
+        }
+        // If it's a stock, try to fetch the current price immediately
+        else if (type === 'stock' && rates && rates.specificPrices) {
+            const stockCode = name.toUpperCase();
+            // Trigger a refresh to get this specific stock's price
+            const data = await fetchMarketData([{ name: stockCode, type: 'stock' }]);
+            if (data.specificPrices && data.specificPrices[stockCode]) {
+                initialPrice = data.specificPrices[stockCode];
+                console.log('[handleSubmit] Fetched live price for', stockCode, ':', initialPrice);
+            }
+        }
 
         onAddAsset({
             id: Date.now(),
             name: name.toUpperCase(),
             amount: Number(amount),
-            price: Number(price),
+            cost: Number(cost),
+            price: initialPrice,
             type,
         });
 
         setName('');
         setAmount('');
-        setPrice('');
+        setCost('');
         setIsAdding(false);
+        setSuggestions([]);
+
+        // Reload all rates to include the new asset
+        loadRates();
     };
 
-    const handlePriceUpdate = (id, newPrice) => {
-        const asset = assets.find(a => a.id === id);
-        if (asset) {
-            onUpdateAsset({ ...asset, price: Number(newPrice) });
-        }
+    const handleSelectSuggestion = (code) => {
+        setName(code);
+        setShowSuggestions(false);
     };
 
     const formatCurrency = (value) => {
         return new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(value);
+    };
+
+    const calculateProfitLoss = (asset) => {
+        const totalCost = asset.amount * asset.cost;
+        const currentValue = asset.amount * asset.price;
+        const profit = currentValue - totalCost;
+        const percentage = totalCost > 0 ? (profit / totalCost) * 100 : 0;
+        return { profit, percentage };
     };
 
     return (
@@ -127,22 +180,18 @@ const Portfolio = ({ assets, onAddAsset, onUpdateAsset, onDeleteAsset }) => {
 
             {/* Market Rates Ticker */}
             {rates && (
-                <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 mb-6 overflow-x-auto pb-2">
-                    <div className="bg-slate-900 border border-slate-800 p-3 rounded-xl flex flex-col items-center min-w-[80px]">
+                <div className="grid grid-cols-3 gap-2 mb-6">
+                    <div className="bg-slate-900 border border-slate-800 p-3 rounded-xl flex flex-col items-center">
                         <span className="text-xs text-slate-500 mb-1">USD</span>
                         <span className="text-sm font-bold text-emerald-400">{rates.USD?.toFixed(2)} ₺</span>
                     </div>
-                    <div className="bg-slate-900 border border-slate-800 p-3 rounded-xl flex flex-col items-center min-w-[80px]">
+                    <div className="bg-slate-900 border border-slate-800 p-3 rounded-xl flex flex-col items-center">
                         <span className="text-xs text-slate-500 mb-1">EUR</span>
                         <span className="text-sm font-bold text-emerald-400">{rates.EUR?.toFixed(2)} ₺</span>
                     </div>
-                    <div className="bg-slate-900 border border-slate-800 p-3 rounded-xl flex flex-col items-center min-w-[80px]">
+                    <div className="bg-slate-900 border border-slate-800 p-3 rounded-xl flex flex-col items-center">
                         <span className="text-xs text-slate-500 mb-1">Altın</span>
                         <span className="text-sm font-bold text-amber-400">{rates.GOLD?.toFixed(0)} ₺</span>
-                    </div>
-                    <div className="bg-slate-900 border border-slate-800 p-3 rounded-xl flex flex-col items-center min-w-[80px]">
-                        <span className="text-xs text-slate-500 mb-1">GBP</span>
-                        <span className="text-sm font-bold text-emerald-400">{rates.GBP?.toFixed(2)} ₺</span>
                     </div>
                 </div>
             )}
@@ -159,7 +208,7 @@ const Portfolio = ({ assets, onAddAsset, onUpdateAsset, onDeleteAsset }) => {
             )}
 
             {isAdding && (
-                <form onSubmit={handleSubmit} className="mb-6 p-4 bg-slate-900 rounded-xl border border-slate-800 animate-in fade-in slide-in-from-top-4">
+                <form onSubmit={handleSubmit} className="mb-6 p-4 bg-slate-900 rounded-xl border border-slate-800 animate-in fade-in slide-in-from-top-4 relative">
                     <div className="grid grid-cols-4 gap-2 mb-4">
                         {['stock', 'fund', 'gold', 'currency'].map((t) => (
                             <button
@@ -175,14 +224,48 @@ const Portfolio = ({ assets, onAddAsset, onUpdateAsset, onDeleteAsset }) => {
                     </div>
 
                     <div className="space-y-3">
-                        <input
-                            type="text"
-                            placeholder={type === 'stock' ? "Hisse Kodu (örn: THYAO)" : type === 'fund' ? "Fon Kodu (örn: MAC)" : "Varlık Adı (örn: USD)"}
-                            value={name}
-                            onChange={(e) => setName(e.target.value)}
-                            className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 uppercase"
-                            required
-                        />
+                        <div className="relative">
+                            {type === 'currency' ? (
+                                <select
+                                    value={name}
+                                    onChange={(e) => setName(e.target.value)}
+                                    className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-white focus:outline-none focus:border-indigo-500"
+                                    required
+                                >
+                                    <option value="" disabled>Para Birimi Seçiniz</option>
+                                    <option value="USD">USD</option>
+                                    <option value="EUR">EUR</option>
+                                </select>
+                            ) : (
+                                <>
+                                    <input
+                                        type="text"
+                                        placeholder={type === 'stock' ? "Hisse Kodu (örn: THYAO)" : type === 'fund' ? "Fon Kodu (örn: MAC)" : "Varlık Adı (örn: USD)"}
+                                        value={name}
+                                        onChange={(e) => setName(e.target.value)}
+                                        onFocus={() => setShowSuggestions(true)}
+                                        className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 uppercase"
+                                        required
+                                    />
+                                    {/* Autocomplete Dropdown */}
+                                    {showSuggestions && suggestions.length > 0 && (
+                                        <div className="absolute z-10 w-full mt-1 bg-slate-800 border border-slate-700 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                                            {suggestions.map((item) => (
+                                                <div
+                                                    key={item.code}
+                                                    onClick={() => handleSelectSuggestion(item.code)}
+                                                    className="p-3 hover:bg-slate-700 cursor-pointer flex justify-between items-center border-b border-slate-700/50 last:border-0"
+                                                >
+                                                    <span className="font-bold text-white">{item.code}</span>
+                                                    <span className="text-xs text-slate-400 truncate max-w-[180px]">{item.name}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </>
+                            )}
+                        </div>
+
                         <div className="flex gap-3">
                             <input
                                 type="number"
@@ -194,9 +277,9 @@ const Portfolio = ({ assets, onAddAsset, onUpdateAsset, onDeleteAsset }) => {
                             />
                             <input
                                 type="number"
-                                placeholder="Birim Fiyat (TL)"
-                                value={price}
-                                onChange={(e) => setPrice(e.target.value)}
+                                placeholder="Birim Maliyet (TL)"
+                                value={cost}
+                                onChange={(e) => setCost(e.target.value)}
                                 className="flex-1 min-w-0 bg-slate-800 border border-slate-700 rounded-lg p-3 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
                                 required
                             />
@@ -217,54 +300,62 @@ const Portfolio = ({ assets, onAddAsset, onUpdateAsset, onDeleteAsset }) => {
                         Henüz yatırım varlığı yok.
                     </div>
                 ) : (
-                    assets.map((asset) => (
-                        <div key={asset.id} className="p-4 bg-slate-900 rounded-xl border border-slate-800">
-                            <div className="flex justify-between items-start mb-3">
-                                <div className="flex items-center gap-3">
-                                    <div className={`p-2 rounded-lg ${asset.type === 'gold' ? 'bg-amber-500/10 text-amber-400' :
+                    assets.map((asset) => {
+                        const { profit, percentage } = calculateProfitLoss(asset);
+                        const isProfit = profit >= 0;
+
+                        return (
+                            <div key={asset.id} className="p-4 bg-slate-900 rounded-xl border border-slate-800">
+                                <div className="flex justify-between items-start mb-3">
+                                    <div className="flex items-center gap-3">
+                                        <div className={`p-2 rounded-lg ${asset.type === 'gold' ? 'bg-amber-500/10 text-amber-400' :
                                             asset.type === 'currency' ? 'bg-emerald-500/10 text-emerald-400' :
                                                 asset.type === 'fund' ? 'bg-blue-500/10 text-blue-400' :
                                                     'bg-indigo-500/10 text-indigo-400'
-                                        }`}>
-                                        {asset.type === 'gold' ? <Coins className="w-5 h-5" /> :
-                                            asset.type === 'currency' ? <Banknote className="w-5 h-5" /> :
-                                                asset.type === 'fund' ? <PieChart className="w-5 h-5" /> :
-                                                    <TrendingUp className="w-5 h-5" />}
+                                            }`}>
+                                            {asset.type === 'gold' ? <Coins className="w-5 h-5" /> :
+                                                asset.type === 'currency' ? <Banknote className="w-5 h-5" /> :
+                                                    asset.type === 'fund' ? <PieChart className="w-5 h-5" /> :
+                                                        <TrendingUp className="w-5 h-5" />}
+                                        </div>
+                                        <div>
+                                            <div className="font-bold text-white text-lg">{asset.name}</div>
+                                            <div className="text-xs text-slate-400 capitalize">
+                                                {asset.type === 'stock' ? 'Hisse Senedi' : asset.type === 'fund' ? 'Yatırım Fonu' : asset.type === 'gold' ? 'Altın/Emtia' : 'Döviz'}
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <div className="font-bold text-white text-lg">{asset.name}</div>
-                                        <div className="text-xs text-slate-400 capitalize">
-                                            {asset.type === 'stock' ? 'Hisse Senedi' : asset.type === 'fund' ? 'Yatırım Fonu' : asset.type === 'gold' ? 'Altın/Emtia' : 'Döviz'}
+                                    <div className="text-right">
+                                        <div className="font-bold text-white text-lg">
+                                            {formatCurrency(Number(asset.amount) * Number(asset.price))}
+                                        </div>
+                                        <div className={`text-xs font-medium ${isProfit ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                            {isProfit ? '+' : ''}{formatCurrency(profit)} ({isProfit ? '+' : ''}{percentage.toFixed(2)}%)
                                         </div>
                                     </div>
                                 </div>
-                                <div className="text-right">
-                                    <div className="font-bold text-white text-lg">
-                                        {formatCurrency(Number(asset.amount) * Number(asset.price))}
-                                    </div>
-                                    <div className="text-xs text-slate-400">{asset.amount} Adet</div>
-                                </div>
-                            </div>
 
-                            <div className="flex items-center gap-2 pt-3 border-t border-slate-800">
-                                <div className="flex-1 relative">
-                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-slate-500">Fiyat:</span>
-                                    <input
-                                        type="number"
-                                        value={asset.price}
-                                        onChange={(e) => handlePriceUpdate(asset.id, e.target.value)}
-                                        className="w-full bg-slate-950 border border-slate-700 rounded px-3 py-1.5 pl-12 text-sm text-white focus:outline-none focus:border-indigo-500"
-                                    />
+                                <div className="flex items-center gap-2 pt-3 border-t border-slate-800 text-sm">
+                                    <div className="flex-1 grid grid-cols-2 gap-2">
+                                        <div>
+                                            <span className="text-slate-500 text-xs block">Maliyet</span>
+                                            <span className="text-slate-300">{formatCurrency(asset.cost || 0)}</span>
+                                        </div>
+                                        <div>
+                                            <span className="text-slate-500 text-xs block">Güncel Fiyat</span>
+                                            <span className="text-white font-medium">{formatCurrency(asset.price)}</span>
+                                        </div>
+                                    </div>
+                                    <button
+                                        onClick={() => onDeleteAsset(asset.id)}
+                                        className="p-2 text-slate-500 hover:text-rose-500 transition-colors"
+                                    >
+                                        <Trash2 className="w-4 h-4" />
+                                    </button>
                                 </div>
-                                <button
-                                    onClick={() => onDeleteAsset(asset.id)}
-                                    className="p-2 text-slate-500 hover:text-rose-500 transition-colors"
-                                >
-                                    <Trash2 className="w-4 h-4" />
-                                </button>
                             </div>
-                        </div>
-                    ))
+                        );
+                    })
                 )}
             </div>
         </div>

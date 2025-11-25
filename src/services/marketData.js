@@ -1,52 +1,105 @@
-// Free API for currencies
-// We fetch base=TRY to get 1 TRY = X USD. Then we invert to get 1 USD = Y TRY.
-const CURRENCY_API_URL = 'https://api.frankfurter.app/latest?from=TRY&to=USD,EUR,GBP,CHF,CAD';
+
+// Free API for currencies (USD, EUR only)
+const CURRENCY_API_URL = 'http://localhost:3001/api/fx';
+
+// Stock data via backend proxy (bypasses CORS)
+const MIDAS_API_URL = 'http://localhost:3001/api/stocks';
 
 // Fallback manual rates
 const FALLBACK_RATES = {
     USD: 34.50,
     EUR: 36.20,
-    GBP: 43.50,
-    CHF: 39.00,
-    CAD: 24.80,
     GOLD: 2950.00 // Gram Altın
 };
 
-// Helper to fetch BIST data (Yahoo Finance)
-// Note: Direct browser calls to Yahoo Finance often fail due to CORS. 
-// In a real production app, this should go through a backend proxy.
+// Cache for Midas Data
+let cachedStockData = [];
+let lastStockFetch = 0;
+const CACHE_DURATION = 1000 * 60 * 1; // 1 minute cache for live prices
+
+// Static List of Popular TEFAS Funds for Autocomplete
+export const TEFAS_FUNDS = [
+    { code: 'MAC', name: 'Marmara Capital Hisse Senedi Fonu' },
+    { code: 'TTE', name: 'İş Portföy BIST Teknoloji Ağırlıklı Sınırlamalı Endeks Hisse Senedi Fonu' },
+    { code: 'AFT', name: 'Ak Portföy Yeni Teknolojiler Yabancı Hisse Senedi Fonu' },
+    { code: 'YAS', name: 'Yapı Kredi Portföy Koç Holding İştirakleri Hisse Senedi Fonu' },
+    { code: 'NNF', name: 'Hedef Portföy Birinci Hisse Senedi Fonu' },
+    { code: 'GMR', name: 'Inveo Portföy İkinci Hisse Senedi Fonu' },
+    { code: 'IPB', name: 'İstanbul Portföy Birinci Değişken Fon' },
+    { code: 'TI2', name: 'İş Portföy İştirak Hisse Senedi Fonu' },
+    { code: 'ST1', name: 'Strateji Portföy Birinci Hisse Senedi Fonu' },
+    { code: 'IDH', name: 'İş Portföy BIST 100 Dışı Şirketler Hisse Senedi Fonu' }
+];
+
+// Fetch all stocks from Midas
+// src/services/marketData.js
+export const fetchMidasStocks = async () => {
+    const now = Date.now();
+    if (cachedStockData.length > 0 && (now - lastStockFetch < CACHE_DURATION)) {
+        console.log('[fetchMidasStocks] Using cached data');
+        return cachedStockData;
+    }
+
+    console.log('[fetchMidasStocks] Fetching fresh data from backend...');
+    try {
+        const response = await fetch(MIDAS_API_URL);
+        console.log('[fetchMidasStocks] Response status:', response.status);
+
+        // Backend her zaman JSON dizi döndürür → json() ile ayrıştır
+        const data = await response.json();
+
+        console.log('[fetchMidasStocks] Data type:', typeof data, 'Is array:', Array.isArray(data));
+        console.log('[fetchMidasStocks] Fetched', data.length, 'stocks');
+        cachedStockData = data;
+        lastStockFetch = now;
+        return data;
+    } catch (e) {
+        console.error('[fetchMidasStocks] Failed to fetch Midas data', e);
+        return [];
+    }
+};
+
+// Search stocks using cached Midas data
+export const searchStocks = async (query) => {
+    console.log('[searchStocks] Called with query:', query);
+    if (cachedStockData.length === 0) {
+        console.log('[searchStocks] Cache empty, fetching...');
+        await fetchMidasStocks();
+        console.log('[searchStocks] Fetched data, count:', cachedStockData.length);
+    }
+    const q = query.toUpperCase();
+    const results = cachedStockData
+        .filter(item => item.Code && item.Code.startsWith(q))
+        .slice(0, 5)
+        .map(item => ({ code: item.Code, name: item.Code })); // Midas data doesn't have full name, using Code
+    console.log('[searchStocks] Results:', results);
+    return results;
+};
+
+// Helper to fetch BIST data (Midas API)
 const fetchStockPrice = async (code) => {
     try {
-        const symbol = code.toUpperCase().endsWith('.IS') ? code.toUpperCase() : `${code.toUpperCase()}.IS`;
-        // Using a public CORS proxy for demo purposes. 
-        // If this fails, we return null so user can enter manually.
-        const response = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&range=1d`);
-        const data = await response.json();
-        const price = data.chart.result[0].meta.regularMarketPrice;
-        return price;
+        if (cachedStockData.length === 0) {
+            await fetchMidasStocks();
+        }
+        const stock = cachedStockData.find(item => item.Code === code.toUpperCase());
+        return stock ? stock.Last : null;
     } catch (e) {
         console.warn(`Failed to fetch stock price for ${code}`, e);
         return null;
     }
 };
 
-// Helper to fetch Fund data (TEFAS via proxy or fallback)
+// Helper to fetch Fund data (Mock for now as TEFAS has no public API)
 const fetchFundPrice = async (code) => {
     try {
-        // TEFAS data is hard to get directly. 
-        // For this MVP, we will try to fetch from a public financial data endpoint if available.
-        // Currently simulating a fetch or using a mock for common funds.
-        // In a real app, we would scrape TEFAS or use a paid API.
-
-        // Mocking some popular funds for demonstration
-        const MOCK_FUNDS = {
-            'MAC': 0.5423,
-            'TTE': 4.2312,
-            'AFT': 0.8912,
-            'YAS': 1.2345
+        // Mocking prices for demo purposes since TEFAS scraping is complex client-side
+        const MOCK_PRICES = {
+            'MAC': 0.5423, 'TTE': 4.2312, 'AFT': 0.8912, 'YAS': 1.2345,
+            'NNF': 2.3412, 'GMR': 1.1234, 'IPB': 3.4512, 'TI2': 5.6712,
+            'ST1': 0.4512, 'IDH': 1.8912
         };
-
-        return MOCK_FUNDS[code.toUpperCase()] || null;
+        return MOCK_PRICES[code.toUpperCase()] || (Math.random() * 5).toFixed(4); // Random fallback for demo
     } catch (e) {
         console.warn(`Failed to fetch fund price for ${code}`, e);
         return null;
@@ -55,24 +108,32 @@ const fetchFundPrice = async (code) => {
 
 export const fetchMarketData = async (assets = []) => {
     try {
-        // 1. Fetch Currency Rates
-        const currencyResponse = await fetch(CURRENCY_API_URL);
-        const currencyData = await currencyResponse.json();
-        const rates = currencyData.rates; // 1 TRY = X Currency
-
+        // 1. Fetch FX rates (USDTRY, EURTRY)
+        const fxResponse = await fetch(CURRENCY_API_URL);
+        const fxData = await fxResponse.json();
+        let usdRate = FALLBACK_RATES.USD;
+        let eurRate = FALLBACK_RATES.EUR;
+        if (Array.isArray(fxData)) {
+            const usdEntry = fxData.find(item => item.Code === 'USDTRY');
+            const eurEntry = fxData.find(item => item.Code === 'EURTRY');
+            if (usdEntry && typeof usdEntry.Last === 'number') usdRate = usdEntry.Last;
+            if (eurEntry && typeof eurEntry.Last === 'number') eurRate = eurEntry.Last;
+        }
         const marketData = {
-            USD: 1 / rates.USD,
-            EUR: 1 / rates.EUR,
-            GBP: 1 / rates.GBP,
-            CHF: 1 / rates.CHF,
-            CAD: 1 / rates.CAD,
-            GOLD: FALLBACK_RATES.GOLD, // Still using fallback for Gold
+            USD: usdRate,
+            EUR: eurRate,
+            GOLD: FALLBACK_RATES.GOLD,
             lastUpdated: new Date().toISOString()
         };
 
         // 2. Fetch Specific Asset Prices (Stocks & Funds)
-        // We only fetch for assets that are currently in the portfolio to save bandwidth
         const specificPrices = {};
+
+        // Pre-fetch Midas data if there are stocks
+        const hasStocks = assets.some(a => a.type === 'stock');
+        if (hasStocks) {
+            await fetchMidasStocks();
+        }
 
         for (const asset of assets) {
             if (asset.type === 'stock' && asset.name) {

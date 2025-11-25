@@ -5,13 +5,17 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "server": "node server.js",
+    "dev:all": "concurrently \"npm run dev\" \"npm run server\"",
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview"
   },
   "dependencies": {
     "@yudiel/react-qr-scanner": "^2.4.1",
+    "cors": "^2.8.5",
     "crypto-js": "^4.2.0",
+    "express": "^5.1.0",
     "firebase": "^12.6.0",
     "lucide-react": "^0.554.0",
     "qrcode.react": "^4.2.0",

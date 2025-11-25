@@ -9,10 +9,10 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       manifest: {
-        name: 'Cebim - Finans ve Yatırım',
+        name: 'Cebim',
         short_name: 'Cebim',
         description: 'Kişisel finans ve yatırım takibi',
-        theme_color: '#0f172a',
+        theme_color: '#6366f1',
         background_color: '#0f172a',
         display: 'standalone',
         icons: [
@@ -26,4 +26,14 @@ export default defineConfig({
       }
     })
   ],
+  server: {
+    proxy: {
+      '/api/midas': {
+        target: 'https://www.getmidas.com',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/midas/, '/wp-json/midas-api/v1'),
+        secure: false
+      }
+    }
+  }
 })
