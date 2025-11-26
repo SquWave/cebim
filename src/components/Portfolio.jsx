@@ -117,7 +117,16 @@ const Portfolio = ({ assets, onAddAsset, onUpdateAsset, onDeleteAsset }) => {
             const data = await fetchMarketData([{ name: stockCode, type: 'stock' }]);
             if (data.specificPrices && data.specificPrices[stockCode]) {
                 initialPrice = data.specificPrices[stockCode];
-                console.log('[handleSubmit] Fetched live price for', stockCode, ':', initialPrice);
+                console.log('[handleSubmit] Fetched live price for stock', stockCode, ':', initialPrice);
+            }
+        }
+        // If it's a fund, fetch the current price from TEFAS
+        else if (type === 'fund') {
+            const fundCode = name.toUpperCase();
+            const data = await fetchMarketData([{ name: fundCode, type: 'fund' }]);
+            if (data.specificPrices && data.specificPrices[fundCode]) {
+                initialPrice = data.specificPrices[fundCode];
+                console.log('[handleSubmit] Fetched live price for fund', fundCode, ':', initialPrice);
             }
         }
 

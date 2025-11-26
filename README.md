@@ -10,7 +10,9 @@
 *   **Canlı Borsa Verileri:** Midas API entegrasyonu ile BIST hisse senetleri ve fon fiyatlarını canlı takip edin.
 *   **Canlı Döviz Kurları:** USD ve EUR kurlarını anlık olarak görüntüleyin ve portföyünüzü güncel tutun.
 *   **Canlı Gram Altın Fiyatı:** Midas API üzerinden anlık gram altın fiyatlarını takip edin.
-*   **Akıllı Otomatik Tamamlama:** Hisse senedi kodlarını ararken anında öneriler alın.
+*   **Canlı Fon Verileri:** TEFAS entegrasyonu ile yatırım fonlarının anlık fiyatlarını sorgulayın.
+*   **Özelleştirilebilir Fon Listesi:** Kendi favori fon listenizi (CSV) yükleyerek sadece ilgilendiğiniz fonlar arasında arama yapın.
+*   **Akıllı Otomatik Tamamlama:** Hisse senedi ve fon kodlarını ararken anında öneriler alın.
 *   **Kâr/Zarar Analizi:** Varlıklarınızın maliyet ve güncel değerini karşılaştırarak net kâr/zarar durumunuzu görün.
 *   **Güvenilir Veri Gösterimi:** Canlı veri alınamadığında yanıltıcı bilgiler yerine açık hata mesajları görürsünüz.
 *   **Ayarlar Sayfası:** Gizli anahtarınızı ve giriş QR kodunuzu güvenli bir şekilde görüntüleyin.

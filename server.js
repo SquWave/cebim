@@ -72,6 +72,69 @@ app.get('/api/fx', async (req, res) => {
     }
 });
 
+// TEFAS Fund Data Endpoint
+app.get('/api/fund/:code', async (req, res) => {
+    const fundCode = req.params.code.toUpperCase();
+    try {
+        console.log(`[Backend] Fetching fund data for ${fundCode}...`);
+        const response = await fetch(`https://www.tefas.gov.tr/FonAnaliz.aspx?FonKod=${fundCode}`);
+        if (!response.ok) {
+            return res.status(response.status).json({ error: 'Failed to fetch from TEFAS' });
+        }
+        const text = await response.text();
+
+        // Extract data from Highcharts script
+        const scriptRegex = /<script[^>]*>([\s\S]*?)<\/script>/gi;
+        let match;
+        let chartScript = null;
+
+        while ((match = scriptRegex.exec(text)) !== null) {
+            if (match[1].includes('chartMainContent_FonFiyatGrafik')) {
+                chartScript = match[1];
+                break;
+            }
+        }
+
+        if (!chartScript) {
+            return res.status(404).json({ error: 'Chart data not found' });
+        }
+
+        // Robust extraction using indexOf
+        const seriesIndex = chartScript.indexOf('series:');
+        if (seriesIndex === -1) return res.status(404).json({ error: 'Series not found' });
+
+        const dataStartIndex = chartScript.indexOf('"data":', seriesIndex);
+        if (dataStartIndex === -1) return res.status(404).json({ error: 'Data not found' });
+
+        const arrayStartIndex = chartScript.indexOf('[', dataStartIndex);
+        const arrayEndIndex = chartScript.indexOf(']', arrayStartIndex);
+
+        if (arrayStartIndex === -1 || arrayEndIndex === -1) {
+            return res.status(404).json({ error: 'Data array malformed' });
+        }
+
+        const dataStr = chartScript.substring(arrayStartIndex + 1, arrayEndIndex);
+        const values = dataStr.split(',').map(v => parseFloat(v.trim()));
+
+        if (values.length === 0) {
+            return res.status(404).json({ error: 'No price data found' });
+        }
+
+        const lastPrice = values[values.length - 1];
+        console.log(`[Backend] Found price for ${fundCode}: ${lastPrice}`);
+
+        res.json({
+            code: fundCode,
+            price: lastPrice,
+            lastUpdated: new Date().toISOString()
+        });
+
+    } catch (error) {
+        console.error('[Backend] Error:', error.message);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
 app.listen(PORT, () => {
     console.log(`\n🚀 Cebim Backend Proxy running on http://localhost:${PORT}`);
     console.log(`📊 Stock data endpoint: http://localhost:${PORT}/api/stocks`);
