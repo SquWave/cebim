@@ -9,13 +9,16 @@
 *   **QR Kod ile Giriş:** Uzun anahtarları yazmakla uğraşmayın! Mobil cihazınızdan QR kodu taratarak saniyeler içinde giriş yapın.
 *   **Canlı Piyasa Verileri:** Midas API ve TEFAS entegrasyonu ile BIST hisse senetleri, yatırım fonları, döviz kurları (USD, EUR) ve gram altın fiyatlarını anlık olarak takip edin. Otomatik güncelleme sayesinde portföyünüz her zaman güncel kalır.
 *   **Akıllı Otomatik Tamamlama:** Hisse senedi ve fon kodlarını ararken anında öneriler alın.
-*   **Kâr/Zarar Analizi:** Varlıklarınızın maliyet ve güncel değerini karşılaştırarak net kâr/zarar durumunuzu görün.
-*   **Detaylı Portföy Yönetimi:** Varlıklarınız için parçalı alım ve satım işlemleri yapın. Alım ve satım geçmişinizi ayrı ayrı görüntüleyin ve düzenleyin.
+*   **Kâr/Zarar Analizi:** Varlıklarınızın maliyet ve güncel değerini karşılaştırarak net kâr/zarar durumunuzu görüntüleyin.
 *   **Ayarlar Sayfası:** Gizli anahtarınızı ve giriş QR kodunuzu güvenli bir şekilde görüntüleyin.
 *   **Bulut Senkronizasyon:** Verileriniz Firebase Firestore üzerinde güvenle saklanır. Telefonunuzda girdiğiniz veri anında bilgisayarınızda görünür.
 *   **Anahtarlı Giriş:** Üyelik derdi yok! Sistem tarafından üretilen "Gizli Anahtar" ile her yerden verilerinize ulaşın.
 *   **Hibrit Dashboard:** Nakit ve yatırım varlıklarınızı tek bir ekranda, net varlık olarak görüntüleyin.
-*   **Cüzdan Yönetimi:** Günlük gelir ve giderlerinizi hızlıca ekleyin, kategorize edin ve takip edin.
+*   **Cüzdan Yönetimi:**
+    *   **Çoklu Hesap:** Nakit, Banka, Kredi Kartı gibi farklı hesaplar oluşturun ve yönetin.
+    *   **Transfer:** Hesaplar arası para transferi yapın.
+    *   **Detaylı Takip:** Gelir ve giderlerinizi kategorize edin, hesap bazlı bakiyelerinizi görün.
+    *   **Düzenleme:** Hesapları ve geçmiş işlemleri (tutar, açıklama, tarih vb.) kolayca düzenleyin.
 *   **Yatırım Portföyü:** Hisse senedi, yatırım fonu, gram altın ve döviz varlıklarınızı kaydedin.
 *   **PWA Desteği:** Mobil cihazınıza uygulama olarak kurabilir ve tam ekran deneyimiyle kullanabilirsiniz.
 *   **Karanlık Mod:** Göz yormayan, modern ve şık tasarım.

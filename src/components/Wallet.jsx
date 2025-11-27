@@ -1,133 +1,445 @@
-import React, { useState } from 'react';
-import { Plus, Trash2, ArrowUpCircle, ArrowDownCircle } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { Plus, Trash2, ArrowUpCircle, ArrowDownCircle, Wallet as WalletIcon, CreditCard, Building2, ArrowRightLeft, Pencil, X, Check } from 'lucide-react';
 
-const Wallet = ({ transactions, onAddTransaction, onDeleteTransaction }) => {
+const Wallet = ({ transactions, onAddTransaction, onUpdateTransaction, onDeleteTransaction, accounts = [], onAddAccount, onUpdateAccount, onDeleteAccount }) => {
+    // Transaction State
     const [isAdding, setIsAdding] = useState(false);
     const [amount, setAmount] = useState('');
     const [description, setDescription] = useState('');
     const [category, setCategory] = useState('');
-    const [type, setType] = useState('expense'); // 'income' or 'expense'
+    const [type, setType] = useState('expense');
+    const [selectedAccountId, setSelectedAccountId] = useState('');
+    const [toAccountId, setToAccountId] = useState('');
 
-    const handleSubmit = (e) => {
+    // Account State
+    const [isAddingAccount, setIsAddingAccount] = useState(false);
+    const [accountName, setAccountName] = useState('');
+    const [accountType, setAccountType] = useState('cash'); // cash, bank, credit_card
+    const [initialBalance, setInitialBalance] = useState('');
+
+    // Editing State
+    const [editingAccount, setEditingAccount] = useState(null);
+    const [editingTransaction, setEditingTransaction] = useState(null);
+
+    // Derived State
+    const accountBalances = useMemo(() => {
+        const balances = {};
+        accounts.forEach(acc => {
+            balances[acc.id] = Number(acc.initialBalance) || 0;
+        });
+        transactions.forEach(t => {
+            if (t.accountId && balances[t.accountId] !== undefined) {
+                if (t.type === 'income') {
+                    balances[t.accountId] += Number(t.amount);
+                } else if (t.type === 'expense') {
+                    balances[t.accountId] -= Number(t.amount);
+                } else if (t.type === 'transfer' && t.toAccountId) {
+                    // Deduct from source (accountId)
+                    balances[t.accountId] -= Number(t.amount);
+                    // Add to destination (toAccountId)
+                    if (balances[t.toAccountId] !== undefined) {
+                        balances[t.toAccountId] += Number(t.amount);
+                    }
+                }
+            } else if (!t.accountId) {
+                // Legacy transactions
+            }
+        });
+        return balances;
+    }, [accounts, transactions]);
+
+    const totalBalance = Object.values(accountBalances).reduce((a, b) => a + b, 0);
+
+    // --- Account Handlers ---
+
+    const handleAddAccount = (e) => {
         e.preventDefault();
-        if (!amount || !description) return;
+        if (!accountName) return;
+
+        onAddAccount({
+            id: Date.now().toString(),
+            name: accountName,
+            type: accountType,
+            initialBalance: Number(initialBalance) || 0,
+            createdAt: new Date().toISOString()
+        });
+
+        setAccountName('');
+        setAccountType('cash');
+        setInitialBalance('');
+        setIsAddingAccount(false);
+    };
+
+    const handleEditAccount = (account) => {
+        setEditingAccount({ ...account });
+    };
+
+    const handleSaveAccount = async (e) => {
+        e.preventDefault();
+        if (!editingAccount || !editingAccount.name) return;
+
+        await onUpdateAccount({
+            ...editingAccount,
+            initialBalance: Number(editingAccount.initialBalance) || 0
+        });
+        setEditingAccount(null);
+    };
+
+    // --- Transaction Handlers ---
+
+    const handleAddTransaction = (e) => {
+        e.preventDefault();
+        if (!amount) return; // Description is now optional
+
+        // If no account selected, try to use the first one
+        const targetAccountId = selectedAccountId || (accounts.length > 0 ? accounts[0].id : null);
+
+        if (!targetAccountId && accounts.length > 0) {
+            alert("Lütfen bir hesap seçin.");
+            return;
+        }
+
+        if (type === 'transfer' && !toAccountId) {
+            alert("Lütfen hedef hesabı seçin.");
+            return;
+        }
+
+        if (type === 'transfer' && targetAccountId === toAccountId) {
+            alert("Aynı hesaba transfer yapamazsınız.");
+            return;
+        }
 
         onAddTransaction({
             id: Date.now(),
             amount: Number(amount),
-            description,
-            category: category || 'Genel',
+            description: description || (type === 'transfer' ? 'Transfer' : 'İşlem'), // Default description if empty
+            category: type === 'transfer' ? 'Transfer' : (category || 'Genel'),
             type,
             date: new Date().toISOString(),
+            accountId: targetAccountId,
+            toAccountId: type === 'transfer' ? toAccountId : null
         });
 
         setAmount('');
         setDescription('');
         setCategory('');
+        setToAccountId('');
         setIsAdding(false);
     };
 
+    const handleEditTransaction = (transaction) => {
+        setEditingTransaction({ ...transaction });
+    };
+
+    const handleSaveTransaction = async (e) => {
+        e.preventDefault();
+        if (!editingTransaction || !editingTransaction.amount) return;
+
+        await onUpdateTransaction({
+            ...editingTransaction,
+            amount: Number(editingTransaction.amount)
+        });
+        setEditingTransaction(null);
+    };
+
+
+    const getAccountIcon = (type) => {
+        switch (type) {
+            case 'bank': return <Building2 className="w-5 h-5" />;
+            case 'credit_card': return <CreditCard className="w-5 h-5" />;
+            default: return <WalletIcon className="w-5 h-5" />;
+        }
+    };
+
     return (
-        <div className="pb-20">
-            <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold text-white">Cüzdan</h2>
-                <button
-                    onClick={() => setIsAdding(!isAdding)}
-                    className="p-2 bg-indigo-600 rounded-full hover:bg-indigo-700 transition-colors"
-                >
-                    <Plus className="w-6 h-6 text-white" />
-                </button>
+        <div className="pb-20 space-y-6">
+            {/* Header & Total Balance */}
+            <div className="flex justify-between items-center">
+                <div>
+                    <h2 className="text-2xl font-bold text-white">Cüzdan</h2>
+                    <div className="text-sm text-slate-400">Toplam Varlık: {new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(totalBalance)}</div>
+                </div>
+                <div className="flex gap-2">
+                    <button
+                        onClick={() => setIsAddingAccount(!isAddingAccount)}
+                        className="p-2 bg-slate-800 rounded-full hover:bg-slate-700 transition-colors text-slate-300"
+                        title="Hesap Ekle"
+                    >
+                        <WalletIcon className="w-6 h-6" />
+                    </button>
+                    <button
+                        onClick={() => setIsAdding(!isAdding)}
+                        className="p-2 bg-indigo-600 rounded-full hover:bg-indigo-700 transition-colors text-white"
+                        title="İşlem Ekle"
+                    >
+                        <Plus className="w-6 h-6" />
+                    </button>
+                </div>
             </div>
 
-            {isAdding && (
-                <form onSubmit={handleSubmit} className="mb-6 p-4 bg-slate-900 rounded-xl border border-slate-800 animate-in fade-in slide-in-from-top-4">
-                    <div className="flex gap-2 mb-4">
-                        <button
-                            type="button"
-                            onClick={() => setType('expense')}
-                            className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${type === 'expense' ? 'bg-rose-500/20 text-rose-400 border border-rose-500/50' : 'bg-slate-800 text-slate-400'
-                                }`}
-                        >
-                            Gider
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => setType('income')}
-                            className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${type === 'income' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/50' : 'bg-slate-800 text-slate-400'
-                                }`}
-                        >
-                            Gelir
-                        </button>
-                    </div>
-
+            {/* Add Account Form */}
+            {isAddingAccount && (
+                <form onSubmit={handleAddAccount} className="p-4 bg-slate-900 rounded-xl border border-slate-800 animate-in fade-in slide-in-from-top-4">
+                    <h3 className="text-lg font-semibold text-white mb-3">Yeni Hesap Ekle</h3>
                     <div className="space-y-3">
+                        <div className="flex gap-2">
+                            <button type="button" onClick={() => setAccountType('cash')} className={`flex-1 py-2 rounded-lg text-sm font-medium border ${accountType === 'cash' ? 'bg-indigo-500/20 text-indigo-400 border-indigo-500/50' : 'bg-slate-800 text-slate-400 border-transparent'}`}>Nakit</button>
+                            <button type="button" onClick={() => setAccountType('bank')} className={`flex-1 py-2 rounded-lg text-sm font-medium border ${accountType === 'bank' ? 'bg-indigo-500/20 text-indigo-400 border-indigo-500/50' : 'bg-slate-800 text-slate-400 border-transparent'}`}>Banka</button>
+                            <button type="button" onClick={() => setAccountType('credit_card')} className={`flex-1 py-2 rounded-lg text-sm font-medium border ${accountType === 'credit_card' ? 'bg-indigo-500/20 text-indigo-400 border-indigo-500/50' : 'bg-slate-800 text-slate-400 border-transparent'}`}>Kredi Kartı</button>
+                        </div>
+                        <input
+                            type="text"
+                            placeholder="Hesap Adı (Örn: Cüzdan, Maaş Kartı)"
+                            value={accountName}
+                            onChange={(e) => setAccountName(e.target.value)}
+                            className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+                            required
+                        />
                         <input
                             type="number"
-                            placeholder="Tutar (TL)"
-                            value={amount}
-                            onChange={(e) => setAmount(e.target.value)}
-                            className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
-                            required
-                        />
-                        <input
-                            type="text"
-                            placeholder="Açıklama"
-                            value={description}
-                            onChange={(e) => setDescription(e.target.value)}
-                            className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
-                            required
-                        />
-                        <input
-                            type="text"
-                            placeholder="Kategori (Opsiyonel)"
-                            value={category}
-                            onChange={(e) => setCategory(e.target.value)}
+                            placeholder="Başlangıç Bakiyesi (Opsiyonel)"
+                            value={initialBalance}
+                            onChange={(e) => setInitialBalance(e.target.value)}
                             className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
                         />
-                        <button
-                            type="submit"
-                            className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-3 rounded-lg transition-colors"
-                        >
-                            Ekle
-                        </button>
+                        <button type="submit" className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-3 rounded-lg transition-colors">Hesap Oluştur</button>
                     </div>
                 </form>
             )}
 
-            <div className="space-y-3">
-                {transactions.length === 0 ? (
-                    <div className="text-center py-10 text-slate-500">
-                        Henüz işlem yok.
-                    </div>
-                ) : (
-                    transactions.sort((a, b) => new Date(b.date) - new Date(a.date)).map((t) => (
-                        <div key={t.id} className="flex items-center justify-between p-4 bg-slate-900 rounded-xl border border-slate-800">
-                            <div className="flex items-center gap-3">
-                                <div className={`p-2 rounded-full ${t.type === 'income' ? 'bg-emerald-500/10' : 'bg-rose-500/10'}`}>
-                                    {t.type === 'income' ? (
-                                        <ArrowUpCircle className="w-5 h-5 text-emerald-500" />
-                                    ) : (
-                                        <ArrowDownCircle className="w-5 h-5 text-rose-500" />
-                                    )}
-                                </div>
-                                <div>
-                                    <div className="font-medium text-white">{t.description}</div>
-                                    <div className="text-xs text-slate-400">{t.category} • {new Date(t.date).toLocaleDateString('tr-TR')}</div>
-                                </div>
+            {/* Edit Account Modal/Form */}
+            {editingAccount && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                    <form onSubmit={handleSaveAccount} className="bg-slate-900 p-6 rounded-2xl w-full max-w-sm border border-slate-800">
+                        <h3 className="text-lg font-bold text-white mb-4">Hesabı Düzenle</h3>
+                        <div className="space-y-3">
+                            <input
+                                type="text"
+                                placeholder="Hesap Adı"
+                                value={editingAccount.name}
+                                onChange={(e) => setEditingAccount({ ...editingAccount, name: e.target.value })}
+                                className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-white focus:outline-none focus:border-indigo-500"
+                                required
+                            />
+                            <input
+                                type="number"
+                                placeholder="Başlangıç Bakiyesi"
+                                value={editingAccount.initialBalance}
+                                onChange={(e) => setEditingAccount({ ...editingAccount, initialBalance: e.target.value })}
+                                className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-white focus:outline-none focus:border-indigo-500"
+                            />
+                            <div className="flex gap-2 mt-4">
+                                <button type="button" onClick={() => setEditingAccount(null)} className="flex-1 py-3 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition-colors">İptal</button>
+                                <button type="submit" className="flex-1 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors">Kaydet</button>
                             </div>
-                            <div className="flex items-center gap-3">
-                                <span className={`font-semibold ${t.type === 'income' ? 'text-emerald-400' : 'text-rose-400'}`}>
-                                    {t.type === 'income' ? '+' : '-'}{new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(t.amount)}
-                                </span>
-                                <button
-                                    onClick={() => onDeleteTransaction(t.id)}
-                                    className="text-slate-600 hover:text-rose-500 transition-colors"
-                                >
+                        </div>
+                    </form>
+                </div>
+            )}
+
+            {/* Accounts List */}
+            <div className="grid grid-cols-2 gap-3">
+                {accounts.map(acc => (
+                    <div key={acc.id} className="p-3 bg-slate-900 rounded-xl border border-slate-800 relative group">
+                        <div className="flex justify-between items-start mb-2">
+                            <div className={`p-2 rounded-lg ${acc.type === 'bank' ? 'bg-blue-500/10 text-blue-400' : acc.type === 'credit_card' ? 'bg-purple-500/10 text-purple-400' : 'bg-emerald-500/10 text-emerald-400'}`}>
+                                {getAccountIcon(acc.type)}
+                            </div>
+                            <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <button onClick={() => handleEditAccount(acc)} className="text-slate-600 hover:text-indigo-400 transition-colors">
+                                    <Pencil className="w-4 h-4" />
+                                </button>
+                                <button onClick={() => onDeleteAccount(acc.id)} className="text-slate-600 hover:text-rose-500 transition-colors">
                                     <Trash2 className="w-4 h-4" />
                                 </button>
                             </div>
                         </div>
-                    ))
+                        <div className="font-medium text-white truncate">{acc.name}</div>
+                        <div className="text-lg font-bold text-slate-200">
+                            {new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(accountBalances[acc.id] || 0)}
+                        </div>
+                    </div>
+                ))}
+                {accounts.length === 0 && (
+                    <div className="col-span-2 text-center py-4 text-slate-500 text-sm border border-dashed border-slate-800 rounded-xl">
+                        Henüz hesap eklenmedi. "Hesap Ekle" butonu ile başlayın.
+                    </div>
+                )}
+            </div>
+
+            {/* Add Transaction Form */}
+            {isAdding && (
+                <form onSubmit={handleAddTransaction} className="p-4 bg-slate-900 rounded-xl border border-slate-800 animate-in fade-in slide-in-from-top-4">
+                    <h3 className="text-lg font-semibold text-white mb-3">Yeni İşlem Ekle</h3>
+                    <div className="flex gap-2 mb-4">
+                        <button type="button" onClick={() => setType('expense')} className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${type === 'expense' ? 'bg-rose-500/20 text-rose-400 border border-rose-500/50' : 'bg-slate-800 text-slate-400'}`}>Gider</button>
+                        <button type="button" onClick={() => setType('income')} className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${type === 'income' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/50' : 'bg-slate-800 text-slate-400'}`}>Gelir</button>
+                        <button type="button" onClick={() => setType('transfer')} className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${type === 'transfer' ? 'bg-blue-500/20 text-blue-400 border border-blue-500/50' : 'bg-slate-800 text-slate-400'}`}>Transfer</button>
+                    </div>
+
+                    <div className="space-y-3">
+                        {accounts.length > 0 && (
+                            <div className="flex gap-2">
+                                <div className="flex-1">
+                                    <label className="text-xs text-slate-400 block mb-1">{type === 'transfer' ? 'Gönderen Hesap' : 'Hesap'}</label>
+                                    <select
+                                        value={selectedAccountId}
+                                        onChange={(e) => setSelectedAccountId(e.target.value)}
+                                        className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-white focus:outline-none focus:border-indigo-500"
+                                    >
+                                        <option value="">Seçiniz...</option>
+                                        {accounts.map(acc => (
+                                            <option key={acc.id} value={acc.id}>{acc.name}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                {type === 'transfer' && (
+                                    <div className="flex-1">
+                                        <label className="text-xs text-slate-400 block mb-1">Alıcı Hesap</label>
+                                        <select
+                                            value={toAccountId}
+                                            onChange={(e) => setToAccountId(e.target.value)}
+                                            className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-white focus:outline-none focus:border-indigo-500"
+                                        >
+                                            <option value="">Seçiniz...</option>
+                                            {accounts.filter(a => a.id !== selectedAccountId).map(acc => (
+                                                <option key={acc.id} value={acc.id}>{acc.name}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                        <input type="number" placeholder="Tutar (TL)" value={amount} onChange={(e) => setAmount(e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500" required />
+                        <input type="text" placeholder="Açıklama (Opsiyonel)" value={description} onChange={(e) => setDescription(e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500" />
+                        {type !== 'transfer' && (
+                            <input type="text" placeholder="Kategori (Opsiyonel)" value={category} onChange={(e) => setCategory(e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500" />
+                        )}
+                        <button type="submit" className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-3 rounded-lg transition-colors">Ekle</button>
+                    </div>
+                </form>
+            )}
+
+            {/* Edit Transaction Modal/Form */}
+            {editingTransaction && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                    <form onSubmit={handleSaveTransaction} className="bg-slate-900 p-6 rounded-2xl w-full max-w-sm border border-slate-800">
+                        <h3 className="text-lg font-bold text-white mb-4">İşlemi Düzenle</h3>
+                        <div className="space-y-3">
+                            <div className="flex gap-2 mb-2">
+                                <button type="button" onClick={() => setEditingTransaction({ ...editingTransaction, type: 'expense' })} className={`flex-1 py-1.5 rounded-lg text-xs font-medium border ${editingTransaction.type === 'expense' ? 'bg-rose-500/20 text-rose-400 border-rose-500/50' : 'bg-slate-800 text-slate-400 border-transparent'}`}>Gider</button>
+                                <button type="button" onClick={() => setEditingTransaction({ ...editingTransaction, type: 'income' })} className={`flex-1 py-1.5 rounded-lg text-xs font-medium border ${editingTransaction.type === 'income' ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/50' : 'bg-slate-800 text-slate-400 border-transparent'}`}>Gelir</button>
+                                <button type="button" onClick={() => setEditingTransaction({ ...editingTransaction, type: 'transfer' })} className={`flex-1 py-1.5 rounded-lg text-xs font-medium border ${editingTransaction.type === 'transfer' ? 'bg-blue-500/20 text-blue-400 border-blue-500/50' : 'bg-slate-800 text-slate-400 border-transparent'}`}>Transfer</button>
+                            </div>
+
+                            <input
+                                type="number"
+                                placeholder="Tutar"
+                                value={editingTransaction.amount}
+                                onChange={(e) => setEditingTransaction({ ...editingTransaction, amount: e.target.value })}
+                                className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-white focus:outline-none focus:border-indigo-500"
+                                required
+                            />
+                            <input
+                                type="text"
+                                placeholder="Açıklama"
+                                value={editingTransaction.description}
+                                onChange={(e) => setEditingTransaction({ ...editingTransaction, description: e.target.value })}
+                                className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-white focus:outline-none focus:border-indigo-500"
+                            />
+                            {editingTransaction.type !== 'transfer' && (
+                                <input
+                                    type="text"
+                                    placeholder="Kategori"
+                                    value={editingTransaction.category}
+                                    onChange={(e) => setEditingTransaction({ ...editingTransaction, category: e.target.value })}
+                                    className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-white focus:outline-none focus:border-indigo-500"
+                                />
+                            )}
+
+                            {/* Account Selectors for Editing */}
+                            <div className="space-y-2">
+                                <div>
+                                    <label className="text-xs text-slate-400 block mb-1">{editingTransaction.type === 'transfer' ? 'Gönderen Hesap' : 'Hesap'}</label>
+                                    <select
+                                        value={editingTransaction.accountId || ''}
+                                        onChange={(e) => setEditingTransaction({ ...editingTransaction, accountId: e.target.value })}
+                                        className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-sm text-white focus:outline-none focus:border-indigo-500"
+                                    >
+                                        <option value="">Seçiniz...</option>
+                                        {accounts.map(acc => (
+                                            <option key={acc.id} value={acc.id}>{acc.name}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                {editingTransaction.type === 'transfer' && (
+                                    <div>
+                                        <label className="text-xs text-slate-400 block mb-1">Alıcı Hesap</label>
+                                        <select
+                                            value={editingTransaction.toAccountId || ''}
+                                            onChange={(e) => setEditingTransaction({ ...editingTransaction, toAccountId: e.target.value })}
+                                            className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-sm text-white focus:outline-none focus:border-indigo-500"
+                                        >
+                                            <option value="">Seçiniz...</option>
+                                            {accounts.filter(a => a.id !== editingTransaction.accountId).map(acc => (
+                                                <option key={acc.id} value={acc.id}>{acc.name}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="flex gap-2 mt-4">
+                                <button type="button" onClick={() => setEditingTransaction(null)} className="flex-1 py-3 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition-colors">İptal</button>
+                                <button type="submit" className="flex-1 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors">Kaydet</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            )}
+
+            {/* Transactions List */}
+            <div className="space-y-3">
+                <h3 className="text-lg font-semibold text-white">Son İşlemler</h3>
+                {transactions.length === 0 ? (
+                    <div className="text-center py-10 text-slate-500">Henüz işlem yok.</div>
+                ) : (
+                    transactions.sort((a, b) => new Date(b.date) - new Date(a.date)).map((t) => {
+                        const account = accounts.find(a => a.id === t.accountId);
+                        const toAccount = t.toAccountId ? accounts.find(a => a.id === t.toAccountId) : null;
+
+                        return (
+                            <div key={t.id} className="flex items-center justify-between p-4 bg-slate-900 rounded-xl border border-slate-800 group">
+                                <div className="flex items-center gap-3">
+                                    <div className={`p-2 rounded-full ${t.type === 'income' ? 'bg-emerald-500/10' : t.type === 'transfer' ? 'bg-blue-500/10' : 'bg-rose-500/10'}`}>
+                                        {t.type === 'income' ? <ArrowUpCircle className="w-5 h-5 text-emerald-500" /> :
+                                            t.type === 'transfer' ? <ArrowRightLeft className="w-5 h-5 text-blue-500" /> :
+                                                <ArrowDownCircle className="w-5 h-5 text-rose-500" />}
+                                    </div>
+                                    <div>
+                                        <div className="font-medium text-white">{t.description || (t.type === 'transfer' ? 'Transfer' : 'İşlem')}</div>
+                                        <div className="text-xs text-slate-400">
+                                            {t.category} • {new Date(t.date).toLocaleDateString('tr-TR')}
+                                            {account && <span className="ml-2 text-indigo-400">• {account.name} {toAccount ? `→ ${toAccount.name}` : ''}</span>}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                    <span className={`font-semibold ${t.type === 'income' ? 'text-emerald-400' : t.type === 'transfer' ? 'text-blue-400' : 'text-rose-400'}`}>
+                                        {t.type === 'income' ? '+' : t.type === 'transfer' ? '' : '-'}{new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(t.amount)}
+                                    </span>
+                                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <button onClick={() => handleEditTransaction(t)} className="text-slate-600 hover:text-indigo-400 transition-colors">
+                                            <Pencil className="w-4 h-4" />
+                                        </button>
+                                        <button onClick={() => onDeleteTransaction(t.id)} className="text-slate-600 hover:text-rose-500 transition-colors">
+                                            <Trash2 className="w-4 h-4" />
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        );
+                    })
                 )}
             </div>
         </div>

@@ -1,11 +1,15 @@
 import React from 'react';
 import { Wallet, TrendingUp, ArrowUpCircle, ArrowDownCircle } from 'lucide-react';
 
-const Dashboard = ({ transactions, assets }) => {
+const Dashboard = ({ transactions, assets, accounts = [] }) => {
     // Calculate Net Worth
+    const totalInitialBalance = accounts.reduce((sum, acc) => sum + (Number(acc.initialBalance) || 0), 0);
+
     const totalCash = transactions.reduce((acc, curr) => {
-        return curr.type === 'income' ? acc + Number(curr.amount) : acc - Number(curr.amount);
-    }, 0);
+        if (curr.type === 'income') return acc + Number(curr.amount);
+        if (curr.type === 'expense') return acc - Number(curr.amount);
+        return acc; // Transfers don't affect total net cash
+    }, totalInitialBalance);
 
     const totalPortfolio = assets.reduce((acc, curr) => {
         // Support both old flat structure and new lot structure

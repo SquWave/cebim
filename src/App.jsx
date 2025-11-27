@@ -13,15 +13,25 @@ const AuthenticatedApp = () => {
   const { user } = useAuth();
 
   // Firestore Hooks
-  const { data: transactions, add: addTransaction, remove: removeTransaction } = useFirestore('transactions');
+  const { data: transactions, add: addTransaction, update: updateTransaction, remove: removeTransaction } = useFirestore('transactions');
   const { data: assets, add: addAsset, update: updateAsset, remove: removeAsset } = useFirestore('assets');
+  const { data: accounts, add: addAccount, update: updateAccount, remove: removeAccount } = useFirestore('accounts');
 
   const renderContent = () => {
     switch (activeTab) {
       case 'dashboard':
-        return <Dashboard transactions={transactions} assets={assets} />;
+        return <Dashboard transactions={transactions} assets={assets} accounts={accounts} />;
       case 'wallet':
-        return <WalletComponent transactions={transactions} onAddTransaction={addTransaction} onDeleteTransaction={removeTransaction} />;
+        return <WalletComponent
+          transactions={transactions}
+          onAddTransaction={addTransaction}
+          onUpdateTransaction={updateTransaction}
+          onDeleteTransaction={removeTransaction}
+          accounts={accounts}
+          onAddAccount={addAccount}
+          onUpdateAccount={updateAccount}
+          onDeleteAccount={removeAccount}
+        />;
       case 'portfolio':
         return <Portfolio assets={assets} onAddAsset={addAsset} onUpdateAsset={updateAsset} onDeleteAsset={removeAsset} />;
       case 'settings':
