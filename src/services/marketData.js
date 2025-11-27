@@ -273,7 +273,7 @@ export const fetchMarketData = async (assets = []) => {
             lastUpdated: new Date().toISOString()
         };
 
-        // 2. Fetch Specific Asset Prices (Stocks & Funds)
+        // 2. Fetch Specific Asset Prices (Stocks & Funds) - Parallelized
         const specificPrices = {};
 
         // Pre-fetch Midas data if there are stocks
@@ -282,16 +282,28 @@ export const fetchMarketData = async (assets = []) => {
             await fetchMidasStocks();
         }
 
-        for (const asset of assets) {
+        // Create an array of promises for all asset price fetches
+        const fetchPromises = assets.map(async (asset) => {
             if (asset.type === 'stock' && asset.name) {
                 const price = await fetchStockPrice(asset.name);
-                if (price) specificPrices[asset.name.toUpperCase()] = price;
+                if (price) return { name: asset.name.toUpperCase(), price };
             }
             if (asset.type === 'fund' && asset.name) {
                 const price = await fetchFundPrice(asset.name);
-                if (price) specificPrices[asset.name.toUpperCase()] = price;
+                if (price) return { name: asset.name.toUpperCase(), price };
             }
-        }
+            return null;
+        });
+
+        // Wait for all fetches to complete in parallel
+        const results = await Promise.all(fetchPromises);
+
+        // Populate specificPrices from results
+        results.forEach(result => {
+            if (result) {
+                specificPrices[result.name] = result.price;
+            }
+        });
 
         return {
             ...marketData,

@@ -26,14 +26,14 @@ export default defineConfig({
       }
     })
   ],
-  server: {
-    proxy: {
-      '/api/midas': {
-        target: 'https://www.getmidas.com',
-        changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api\/midas/, '/wp-json/midas-api/v1'),
-        secure: false
-      }
-    }
-  }
+  // server: {
+  //   proxy: {
+  //     '/api/midas': {
+  //       target: 'https://www.getmidas.com',
+  //       changeOrigin: true,
+  //       rewrite: (path) => path.replace(/^\/api\/midas/, '/wp-json/midas-api/v1'),
+  //       secure: false
+  //     }
+  //   }
+  // }
 })

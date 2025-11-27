@@ -7,10 +7,7 @@
 ## 🌟 Özellikler
 
 *   **QR Kod ile Giriş:** Uzun anahtarları yazmakla uğraşmayın! Mobil cihazınızdan QR kodu taratarak saniyeler içinde giriş yapın.
-*   **Canlı Borsa Verileri:** Midas API entegrasyonu ile BIST hisse senetleri ve fon fiyatlarını canlı takip edin.
-*   **Canlı Döviz Kurları:** USD ve EUR kurlarını anlık olarak görüntüleyin ve portföyünüzü güncel tutun.
-*   **Canlı Gram Altın Fiyatı:** Midas API üzerinden anlık gram altın fiyatlarını takip edin.
-*   **Canlı Fon Verileri:** TEFAS entegrasyonu ile yatırım fonlarının anlık fiyatlarını sorgulayın.
+*   **Canlı Piyasa Verileri:** Midas API ve TEFAS entegrasyonu ile BIST hisse senetleri, yatırım fonları, döviz kurları (USD, EUR) ve gram altın fiyatlarını anlık olarak takip edin. Otomatik güncelleme sayesinde portföyünüz her zaman güncel kalır.
 *   **Özelleştirilebilir Fon Listesi:** Kendi favori fon listenizi (CSV) yükleyerek sadece ilgilendiğiniz fonlar arasında arama yapın.
 *   **Akıllı Otomatik Tamamlama:** Hisse senedi ve fon kodlarını ararken anında öneriler alın.
 *   **Kâr/Zarar Analizi:** Varlıklarınızın maliyet ve güncel değerini karşılaştırarak net kâr/zarar durumunuzu görün.

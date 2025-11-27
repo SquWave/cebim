@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Plus, TrendingUp, RefreshCw, Trash2, Coins, Banknote, ArrowUpRight, PieChart, Search } from 'lucide-react';
 import { fetchMarketData, searchStocks, TEFAS_FUNDS } from '../services/marketData';
 
@@ -7,7 +7,7 @@ const Portfolio = ({ assets, onAddAsset, onUpdateAsset, onDeleteAsset }) => {
     const [name, setName] = useState('');
     const [amount, setAmount] = useState('');
     const [cost, setCost] = useState(''); // Unit Cost (Maliyet)
-    const [type, setType] = useState('stock'); // stock, fund, gold, currency
+    const [type, setType] = useState(''); // stock, fund, gold, currency
     const [rates, setRates] = useState(null);
     const [specificPrices, setSpecificPrices] = useState({});
     const [loadingRates, setLoadingRates] = useState(false);
@@ -16,13 +16,39 @@ const Portfolio = ({ assets, onAddAsset, onUpdateAsset, onDeleteAsset }) => {
     // Autocomplete State
     const [suggestions, setSuggestions] = useState([]);
     const [showSuggestions, setShowSuggestions] = useState(false);
+    const isSelectionRef = useRef(false);
 
     useEffect(() => {
         loadRates();
     }, []);
 
+    // Reset form when opening add dialog
+    useEffect(() => {
+        if (isAdding) {
+            setName('');
+            setAmount('');
+            setCost('');
+            setType('');
+            setSuggestions([]);
+            setShowSuggestions(false);
+            isSelectionRef.current = false;
+        }
+    }, [isAdding]);
+
+    // Auto-update prices when rates are loaded
+    useEffect(() => {
+        if (rates && assets.length > 0) {
+            updateAssetPrices(true); // Silent update
+        }
+    }, [rates]);
+
     // Autocomplete Logic
     useEffect(() => {
+        if (isSelectionRef.current) {
+            isSelectionRef.current = false;
+            return;
+        }
+
         if (!name || (type !== 'stock' && type !== 'fund')) {
             setSuggestions([]);
             return;
@@ -59,7 +85,7 @@ const Portfolio = ({ assets, onAddAsset, onUpdateAsset, onDeleteAsset }) => {
         setLoadingRates(false);
     };
 
-    const updateAssetPrices = () => {
+    const updateAssetPrices = (silent = false) => {
         if (!rates) return;
         let updatedCount = 0;
         let errorCount = 0;
@@ -79,20 +105,22 @@ const Portfolio = ({ assets, onAddAsset, onUpdateAsset, onDeleteAsset }) => {
                 newPrice = specificPrices[assetName];
             }
 
-            if (newPrice) {
+            if (newPrice && newPrice !== asset.price) {
                 onUpdateAsset({ ...asset, price: newPrice });
                 updatedCount++;
-            } else {
+            } else if (!newPrice) {
                 errorCount++;
             }
         });
 
-        if (updatedCount > 0) {
-            alert(`${updatedCount} varlığın fiyatı güncel piyasa verileriyle yenilendi.`);
-        } else if (errorCount > 0) {
-            alert('Bazı varlıkların güncel fiyatına ulaşılamadı. Lütfen internet bağlantınızı kontrol edin veya daha sonra tekrar deneyin.');
-        } else {
-            alert('Güncellenebilecek uygun varlık bulunamadı.');
+        if (!silent) {
+            if (updatedCount > 0) {
+                alert(`${updatedCount} varlığın fiyatı güncel piyasa verileriyle yenilendi.`);
+            } else if (errorCount > 0) {
+                alert('Bazı varlıkların güncel fiyatına ulaşılamadı. Lütfen internet bağlantınızı kontrol edin veya daha sonra tekrar deneyin.');
+            } else {
+                alert('Güncellenebilecek uygun varlık bulunamadı.');
+            }
         }
     };
 
@@ -130,26 +158,54 @@ const Portfolio = ({ assets, onAddAsset, onUpdateAsset, onDeleteAsset }) => {
             }
         }
 
-        onAddAsset({
-            id: Date.now(),
-            name: name.toUpperCase(),
-            amount: Number(amount),
-            cost: Number(cost),
-            price: initialPrice,
-            type,
-        });
+        try {
+            const assetName = name.toUpperCase();
 
-        setName('');
-        setAmount('');
-        setCost('');
-        setIsAdding(false);
-        setSuggestions([]);
+            // Check if asset already exists
+            const existingAsset = assets.find(a => a.name === assetName && a.type === type);
 
-        // Reload all rates to include the new asset
-        loadRates();
+            if (existingAsset) {
+                // Calculate new values
+                const newAmount = Number(existingAsset.amount) + Number(amount);
+                const totalCostExisting = Number(existingAsset.amount) * Number(existingAsset.cost);
+                const totalCostNew = Number(amount) * Number(cost);
+                const weightedCost = (totalCostExisting + totalCostNew) / newAmount;
+
+                // Update existing asset
+                await onUpdateAsset({
+                    ...existingAsset,
+                    amount: newAmount,
+                    cost: weightedCost,
+                    price: initialPrice, // Update to latest price
+                });
+                // Alert removed as requested
+            } else {
+                // Add new asset
+                await onAddAsset({
+                    id: Date.now(),
+                    name: assetName,
+                    amount: Number(amount),
+                    cost: Number(cost),
+                    price: initialPrice,
+                    type,
+                });
+            }
+
+            // Reset form on success
+            setName('');
+            setAmount('');
+            setCost('');
+            setIsAdding(false);
+            setSuggestions([]);
+
+        } catch (error) {
+            console.error("Error adding/updating asset:", error);
+            alert("Varlık eklenirken bir hata oluştu. Lütfen tekrar deneyin.");
+        }
     };
 
     const handleSelectSuggestion = (code) => {
+        isSelectionRef.current = true;
         setName(code);
         setShowSuggestions(false);
     };
@@ -245,7 +301,7 @@ const Portfolio = ({ assets, onAddAsset, onUpdateAsset, onDeleteAsset }) => {
                                 className={`py-2 rounded-lg text-xs sm:text-sm font-medium capitalize transition-colors ${type === t ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/50' : 'bg-slate-800 text-slate-400'
                                     }`}
                             >
-                                {t === 'stock' ? 'Hisse' : t === 'fund' ? 'Fon' : t === 'gold' ? 'Gram Altın' : 'Döviz'}
+                                {t === 'stock' ? 'Hisse' : t === 'fund' ? 'Fon' : t === 'gold' ? 'Altın' : 'Döviz'}
                             </button>
                         ))}
                     </div>
@@ -274,7 +330,7 @@ const Portfolio = ({ assets, onAddAsset, onUpdateAsset, onDeleteAsset }) => {
                                 <>
                                     <input
                                         type="text"
-                                        placeholder={type === 'stock' ? "Hisse Kodu (örn: THYAO)" : type === 'fund' ? "Fon Kodu (örn: MAC)" : "Varlık Adı (örn: USD)"}
+                                        placeholder={type === 'stock' ? "Hisse Kodu" : type === 'fund' ? "Fon Kodu" : "Varlık Adı"}
                                         value={name}
                                         onChange={(e) => setName(e.target.value)}
                                         onFocus={() => setShowSuggestions(true)}
@@ -311,7 +367,7 @@ const Portfolio = ({ assets, onAddAsset, onUpdateAsset, onDeleteAsset }) => {
                             />
                             <input
                                 type="number"
-                                placeholder="Birim Maliyet (TL)"
+                                placeholder="Birim Maliyet (₺)"
                                 value={cost}
                                 onChange={(e) => setCost(e.target.value)}
                                 className="flex-1 min-w-0 bg-slate-800 border border-slate-700 rounded-lg p-3 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
@@ -356,6 +412,8 @@ const Portfolio = ({ assets, onAddAsset, onUpdateAsset, onDeleteAsset }) => {
                                             <div className="font-bold text-white text-lg">{asset.name}</div>
                                             <div className="text-xs text-slate-400 capitalize">
                                                 {asset.type === 'stock' ? 'Hisse Senedi' : asset.type === 'fund' ? 'Yatırım Fonu' : asset.type === 'gold' ? 'Gram Altın' : 'Döviz'}
+                                                <span className="mx-1">•</span>
+                                                {asset.amount} Adet
                                             </div>
                                         </div>
                                     </div>
