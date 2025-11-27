@@ -8,7 +8,22 @@ const Dashboard = ({ transactions, assets }) => {
     }, 0);
 
     const totalPortfolio = assets.reduce((acc, curr) => {
-        return acc + (Number(curr.amount) * Number(curr.price));
+        // Support both old flat structure and new lot structure
+        if (curr.lots) {
+            // Lot-based: sum all lots' values minus sales
+            const totalPurchasedValue = curr.lots.reduce((sum, lot) => {
+                return sum + (Number(lot.amount) * Number(lot.price));
+            }, 0);
+
+            const currentPrice = curr.lots[0]?.price || 0;
+            const totalSoldAmount = (curr.sales || []).reduce((sum, sale) => sum + Number(sale.amount), 0);
+            const soldValue = totalSoldAmount * currentPrice;
+
+            return acc + (totalPurchasedValue - soldValue);
+        } else {
+            // Legacy flat structure
+            return acc + (Number(curr.amount) * Number(curr.price));
+        }
     }, 0);
 
     const netWorth = totalCash + totalPortfolio;
@@ -87,22 +102,40 @@ const Dashboard = ({ transactions, assets }) => {
                             Henüz varlık eklenmedi.
                         </div>
                     ) : (
-                        assets.map((asset) => (
-                            <div key={asset.id} className="flex items-center justify-between p-4 bg-slate-900 rounded-xl border border-slate-800">
-                                <div>
-                                    <div className="font-medium text-white">{asset.name}</div>
-                                    <div className="text-xs text-slate-400">{asset.amount} Adet</div>
-                                </div>
-                                <div className="text-right">
-                                    <div className="font-semibold text-slate-200">
-                                        {new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(Number(asset.amount) * Number(asset.price))}
+                        assets.map((asset) => {
+                            let displayAmount = 0;
+                            let displayValue = 0;
+                            let currentPrice = 0;
+
+                            if (asset.lots) {
+                                const totalPurchased = asset.lots.reduce((sum, lot) => sum + Number(lot.amount), 0);
+                                const totalSold = (asset.sales || []).reduce((sum, sale) => sum + Number(sale.amount), 0);
+                                displayAmount = totalPurchased - totalSold;
+                                currentPrice = asset.lots[0]?.price || 0;
+                                displayValue = displayAmount * currentPrice;
+                            } else {
+                                displayAmount = Number(asset.amount);
+                                currentPrice = Number(asset.price);
+                                displayValue = displayAmount * currentPrice;
+                            }
+
+                            return (
+                                <div key={asset.id} className="flex items-center justify-between p-4 bg-slate-900 rounded-xl border border-slate-800">
+                                    <div>
+                                        <div className="font-medium text-white">{asset.name}</div>
+                                        <div className="text-xs text-slate-400">{displayAmount} Adet</div>
                                     </div>
-                                    <div className="text-xs text-slate-500">
-                                        {new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(asset.price)} / adet
+                                    <div className="text-right">
+                                        <div className="font-semibold text-slate-200">
+                                            {new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(displayValue)}
+                                        </div>
+                                        <div className="text-xs text-slate-500">
+                                            {new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(currentPrice)} / adet
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        ))
+                            );
+                        })
                     )}
                 </div>
             </div>

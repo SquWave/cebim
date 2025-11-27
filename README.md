@@ -8,10 +8,9 @@
 
 *   **QR Kod ile Giriş:** Uzun anahtarları yazmakla uğraşmayın! Mobil cihazınızdan QR kodu taratarak saniyeler içinde giriş yapın.
 *   **Canlı Piyasa Verileri:** Midas API ve TEFAS entegrasyonu ile BIST hisse senetleri, yatırım fonları, döviz kurları (USD, EUR) ve gram altın fiyatlarını anlık olarak takip edin. Otomatik güncelleme sayesinde portföyünüz her zaman güncel kalır.
-*   **Özelleştirilebilir Fon Listesi:** Kendi favori fon listenizi (CSV) yükleyerek sadece ilgilendiğiniz fonlar arasında arama yapın.
 *   **Akıllı Otomatik Tamamlama:** Hisse senedi ve fon kodlarını ararken anında öneriler alın.
 *   **Kâr/Zarar Analizi:** Varlıklarınızın maliyet ve güncel değerini karşılaştırarak net kâr/zarar durumunuzu görün.
-*   **Güvenilir Veri Gösterimi:** Canlı veri alınamadığında yanıltıcı bilgiler yerine açık hata mesajları görürsünüz.
+*   **Detaylı Portföy Yönetimi:** Varlıklarınız için parçalı alım ve satım işlemleri yapın. Alım ve satım geçmişinizi ayrı ayrı görüntüleyin ve düzenleyin.
 *   **Ayarlar Sayfası:** Gizli anahtarınızı ve giriş QR kodunuzu güvenli bir şekilde görüntüleyin.
 *   **Bulut Senkronizasyon:** Verileriniz Firebase Firestore üzerinde güvenle saklanır. Telefonunuzda girdiğiniz veri anında bilgisayarınızda görünür.
 *   **Anahtarlı Giriş:** Üyelik derdi yok! Sistem tarafından üretilen "Gizli Anahtar" ile her yerden verilerinize ulaşın.
