@@ -7,6 +7,7 @@ import Settings from './components/Settings';
 import LoginScreen from './components/LoginScreen';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { useFirestore } from './hooks/useFirestore';
+import { DEFAULT_INCOME_CATEGORIES, DEFAULT_EXPENSE_CATEGORIES } from './data/defaultCategories';
 
 const AuthenticatedApp = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -16,6 +17,22 @@ const AuthenticatedApp = () => {
   const { data: transactions, add: addTransaction, update: updateTransaction, remove: removeTransaction } = useFirestore('transactions');
   const { data: assets, add: addAsset, update: updateAsset, remove: removeAsset } = useFirestore('assets');
   const { data: accounts, add: addAccount, update: updateAccount, remove: removeAccount } = useFirestore('accounts');
+  const { data: categories, add: addCategory } = useFirestore('categories');
+
+  // Seed Categories
+  React.useEffect(() => {
+    if (user && categories && categories.length === 0) {
+      const seedCategories = async () => {
+        console.log("Seeding default categories...");
+        const allCategories = [...DEFAULT_INCOME_CATEGORIES, ...DEFAULT_EXPENSE_CATEGORIES];
+        for (const cat of allCategories) {
+          await addCategory(cat);
+        }
+        console.log("Categories seeded.");
+      };
+      seedCategories();
+    }
+  }, [user, categories, addCategory]);
 
   const renderContent = () => {
     switch (activeTab) {
@@ -31,6 +48,7 @@ const AuthenticatedApp = () => {
           onAddAccount={addAccount}
           onUpdateAccount={updateAccount}
           onDeleteAccount={removeAccount}
+          categories={categories}
         />;
       case 'portfolio':
         return <Portfolio assets={assets} onAddAsset={addAsset} onUpdateAsset={updateAsset} onDeleteAsset={removeAsset} />;

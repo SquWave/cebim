@@ -1,25 +1,39 @@
 import React, { useState, useMemo } from 'react';
-import { Plus, Trash2, ArrowUpCircle, ArrowDownCircle, Wallet as WalletIcon, CreditCard, Building2, ArrowRightLeft, Pencil, X, Check } from 'lucide-react';
+import { Plus, Trash2, ArrowUpCircle, ArrowDownCircle, Wallet as WalletIcon, CreditCard, Building2, ArrowRightLeft, Pencil, X, Check, HandCoins, Home, Utensils, Bus, Car, ShoppingBag, Film, HeartPulse, ChartNoAxesCombined, BanknoteArrowDown, IterationCw, ReceiptText } from 'lucide-react';
 
-const Wallet = ({ transactions, onAddTransaction, onUpdateTransaction, onDeleteTransaction, accounts = [], onAddAccount, onUpdateAccount, onDeleteAccount }) => {
+const Wallet = ({ transactions = [], onAddTransaction, onUpdateTransaction, onDeleteTransaction, accounts = [], onAddAccount, onUpdateAccount, onDeleteAccount, categories = [] }) => {
+    // Helper to format date for datetime-local input (YYYY-MM-DDTHH:mm)
+    const formatDateForInput = (dateInput) => {
+        try {
+            const date = dateInput ? new Date(dateInput) : new Date();
+            if (isNaN(date.getTime())) return new Date().toISOString().slice(0, 16);
+            const pad = (num) => num.toString().padStart(2, '0');
+            return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+        } catch (e) {
+            return new Date().toISOString().slice(0, 16);
+        }
+    };
+
     // Transaction State
     const [isAdding, setIsAdding] = useState(false);
     const [amount, setAmount] = useState('');
     const [description, setDescription] = useState('');
     const [category, setCategory] = useState('');
     const [type, setType] = useState('expense');
+    const [date, setDate] = useState(formatDateForInput()); // Default to current local datetime
     const [selectedAccountId, setSelectedAccountId] = useState('');
     const [toAccountId, setToAccountId] = useState('');
+    const [editingTransaction, setEditingTransaction] = useState(null);
 
     // Account State
     const [isAddingAccount, setIsAddingAccount] = useState(false);
     const [accountName, setAccountName] = useState('');
-    const [accountType, setAccountType] = useState('cash'); // cash, bank, credit_card
     const [initialBalance, setInitialBalance] = useState('');
-
-    // Editing State
+    const [accountType, setAccountType] = useState('cash');
     const [editingAccount, setEditingAccount] = useState(null);
-    const [editingTransaction, setEditingTransaction] = useState(null);
+
+    // Ensure transactions is an array
+    const safeTransactions = transactions || [];
 
     // Derived State
     const accountBalances = useMemo(() => {
@@ -27,7 +41,7 @@ const Wallet = ({ transactions, onAddTransaction, onUpdateTransaction, onDeleteT
         accounts.forEach(acc => {
             balances[acc.id] = Number(acc.initialBalance) || 0;
         });
-        transactions.forEach(t => {
+        safeTransactions.forEach(t => {
             if (t.accountId && balances[t.accountId] !== undefined) {
                 if (t.type === 'income') {
                     balances[t.accountId] += Number(t.amount);
@@ -46,12 +60,45 @@ const Wallet = ({ transactions, onAddTransaction, onUpdateTransaction, onDeleteT
             }
         });
         return balances;
-    }, [accounts, transactions]);
+    }, [accounts, safeTransactions]);
 
     const totalBalance = Object.values(accountBalances).reduce((a, b) => a + b, 0);
 
-    // --- Account Handlers ---
+    // Helper to get icon component
+    const getCategoryIcon = (iconName) => {
+        const icons = {
+            // Income Categories (Legacy -> New)
+            'Briefcase': HandCoins,
+            'TrendingUp': ChartNoAxesCombined,
+            'Gift': BanknoteArrowDown,
+            'RefreshCw': IterationCw,
 
+            // Expense Categories
+            'Home': Home,
+            'Utensils': Utensils,
+            'Bus': Bus,
+            'Car': Car,
+            'ShoppingBag': ShoppingBag,
+            'Film': Film,
+            'HeartPulse': HeartPulse,
+            'CreditCard': CreditCard,
+
+            // Direct mappings (if data is updated)
+            'HandCoins': HandCoins,
+            'ChartNoAxesCombined': ChartNoAxesCombined,
+            'BanknoteArrowDown': BanknoteArrowDown,
+            'IterationCw': IterationCw,
+            'ReceiptText': ReceiptText
+        };
+        return icons[iconName] || WalletIcon;
+    };
+
+    // Filter categories based on transaction type
+    const availableCategories = useMemo(() => {
+        return categories.filter(c => c.type === type);
+    }, [categories, type]);
+
+    // --- Account Handlers ---
     const handleAddAccount = (e) => {
         e.preventDefault();
         if (!accountName) return;
@@ -60,13 +107,12 @@ const Wallet = ({ transactions, onAddTransaction, onUpdateTransaction, onDeleteT
             id: Date.now().toString(),
             name: accountName,
             type: accountType,
-            initialBalance: Number(initialBalance) || 0,
-            createdAt: new Date().toISOString()
+            initialBalance: Number(initialBalance) || 0
         });
 
         setAccountName('');
-        setAccountType('cash');
         setInitialBalance('');
+        setAccountType('cash');
         setIsAddingAccount(false);
     };
 
@@ -74,13 +120,13 @@ const Wallet = ({ transactions, onAddTransaction, onUpdateTransaction, onDeleteT
         setEditingAccount({ ...account });
     };
 
-    const handleSaveAccount = async (e) => {
+    const handleSaveAccount = (e) => {
         e.preventDefault();
         if (!editingAccount || !editingAccount.name) return;
 
-        await onUpdateAccount({
+        onUpdateAccount({
             ...editingAccount,
-            initialBalance: Number(editingAccount.initialBalance) || 0
+            initialBalance: Number(editingAccount.initialBalance)
         });
         setEditingAccount(null);
     };
@@ -89,7 +135,7 @@ const Wallet = ({ transactions, onAddTransaction, onUpdateTransaction, onDeleteT
 
     const handleAddTransaction = (e) => {
         e.preventDefault();
-        if (!amount) return; // Description is now optional
+        if (!amount) return;
 
         // If no account selected, try to use the first one
         const targetAccountId = selectedAccountId || (accounts.length > 0 ? accounts[0].id : null);
@@ -109,13 +155,17 @@ const Wallet = ({ transactions, onAddTransaction, onUpdateTransaction, onDeleteT
             return;
         }
 
+        if (type !== 'transfer' && !category) {
+            return;
+        }
+
         onAddTransaction({
             id: Date.now(),
             amount: Number(amount),
-            description: description || (type === 'transfer' ? 'Transfer' : 'İşlem'), // Default description if empty
-            category: type === 'transfer' ? 'Transfer' : (category || 'Genel'),
+            description: description || (type === 'transfer' ? 'Transfer' : 'İşlem'),
+            category: type === 'transfer' ? 'Transfer' : category,
             type,
-            date: new Date().toISOString(),
+            date: new Date(date).toISOString(),
             accountId: targetAccountId,
             toAccountId: type === 'transfer' ? toAccountId : null
         });
@@ -124,11 +174,15 @@ const Wallet = ({ transactions, onAddTransaction, onUpdateTransaction, onDeleteT
         setDescription('');
         setCategory('');
         setToAccountId('');
+        setDate(formatDateForInput()); // Reset to current local datetime
         setIsAdding(false);
     };
 
     const handleEditTransaction = (transaction) => {
-        setEditingTransaction({ ...transaction });
+        setEditingTransaction({
+            ...transaction,
+            date: formatDateForInput(transaction.date) // Format for datetime-local input
+        });
     };
 
     const handleSaveTransaction = async (e) => {
@@ -137,7 +191,8 @@ const Wallet = ({ transactions, onAddTransaction, onUpdateTransaction, onDeleteT
 
         await onUpdateTransaction({
             ...editingTransaction,
-            amount: Number(editingTransaction.amount)
+            amount: Number(editingTransaction.amount),
+            date: new Date(editingTransaction.date).toISOString()
         });
         setEditingTransaction(null);
     };
@@ -311,10 +366,38 @@ const Wallet = ({ transactions, onAddTransaction, onUpdateTransaction, onDeleteT
                             </div>
                         )}
                         <input type="number" placeholder="Tutar (TL)" value={amount} onChange={(e) => setAmount(e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500" required />
+                        <input
+                            type="datetime-local"
+                            value={date}
+                            onChange={(e) => setDate(e.target.value)}
+                            className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+                            required
+                        />
                         <input type="text" placeholder="Açıklama (Opsiyonel)" value={description} onChange={(e) => setDescription(e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500" />
+
                         {type !== 'transfer' && (
-                            <input type="text" placeholder="Kategori (Opsiyonel)" value={category} onChange={(e) => setCategory(e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500" />
+                            <div className="relative">
+                                <select
+                                    value={category}
+                                    onChange={(e) => setCategory(e.target.value)}
+                                    className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-white focus:outline-none focus:border-indigo-500 appearance-none"
+                                    required
+                                >
+                                    <option value="">Kategori Seçiniz...</option>
+                                    {availableCategories.map(cat => (
+                                        <optgroup key={cat.id} label={cat.name}>
+                                            {cat.subcategories.map(sub => (
+                                                <option key={`${cat.id}-${sub}`} value={sub}>{sub}</option>
+                                            ))}
+                                        </optgroup>
+                                    ))}
+                                </select>
+                                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                                    <ArrowDownCircle className="w-4 h-4" />
+                                </div>
+                            </div>
                         )}
+
                         <button type="submit" className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-3 rounded-lg transition-colors">Ekle</button>
                     </div>
                 </form>
@@ -341,6 +424,13 @@ const Wallet = ({ transactions, onAddTransaction, onUpdateTransaction, onDeleteT
                                 required
                             />
                             <input
+                                type="datetime-local"
+                                value={editingTransaction.date}
+                                onChange={(e) => setEditingTransaction({ ...editingTransaction, date: e.target.value })}
+                                className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+                                required
+                            />
+                            <input
                                 type="text"
                                 placeholder="Açıklama"
                                 value={editingTransaction.description}
@@ -348,13 +438,20 @@ const Wallet = ({ transactions, onAddTransaction, onUpdateTransaction, onDeleteT
                                 className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-white focus:outline-none focus:border-indigo-500"
                             />
                             {editingTransaction.type !== 'transfer' && (
-                                <input
-                                    type="text"
-                                    placeholder="Kategori"
+                                <select
                                     value={editingTransaction.category}
                                     onChange={(e) => setEditingTransaction({ ...editingTransaction, category: e.target.value })}
                                     className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-white focus:outline-none focus:border-indigo-500"
-                                />
+                                >
+                                    <option value="">Kategori Seçiniz...</option>
+                                    {categories.filter(c => c.type === editingTransaction.type).map(cat => (
+                                        <optgroup key={cat.id} label={cat.name}>
+                                            {cat.subcategories.map(sub => (
+                                                <option key={`${cat.id}-${sub}`} value={sub}>{sub}</option>
+                                            ))}
+                                        </optgroup>
+                                    ))}
+                                </select>
                             )}
 
                             {/* Account Selectors for Editing */}
@@ -401,31 +498,44 @@ const Wallet = ({ transactions, onAddTransaction, onUpdateTransaction, onDeleteT
             {/* Transactions List */}
             <div className="space-y-3">
                 <h3 className="text-lg font-semibold text-white">Son İşlemler</h3>
-                {transactions.length === 0 ? (
+                {safeTransactions.length === 0 ? (
                     <div className="text-center py-10 text-slate-500">Henüz işlem yok.</div>
                 ) : (
-                    transactions.sort((a, b) => new Date(b.date) - new Date(a.date)).map((t) => {
+                    safeTransactions.sort((a, b) => new Date(b.date) - new Date(a.date)).map((t) => {
                         const account = accounts.find(a => a.id === t.accountId);
                         const toAccount = t.toAccountId ? accounts.find(a => a.id === t.toAccountId) : null;
 
+                        // Find category icon
+                        let iconName = 'Wallet';
+                        if (t.type === 'transfer') {
+                            iconName = 'ArrowRightLeft';
+                        } else {
+                            const mainCat = categories.find(c => c.subcategories.includes(t.category) || c.name === t.category);
+                            if (mainCat) iconName = mainCat.icon;
+                        }
+
                         return (
                             <div key={t.id} className="flex items-center justify-between p-4 bg-slate-900 rounded-xl border border-slate-800 group">
-                                <div className="flex items-center gap-3">
-                                    <div className={`p-2 rounded-full ${t.type === 'income' ? 'bg-emerald-500/10' : t.type === 'transfer' ? 'bg-blue-500/10' : 'bg-rose-500/10'}`}>
-                                        {t.type === 'income' ? <ArrowUpCircle className="w-5 h-5 text-emerald-500" /> :
-                                            t.type === 'transfer' ? <ArrowRightLeft className="w-5 h-5 text-blue-500" /> :
-                                                <ArrowDownCircle className="w-5 h-5 text-rose-500" />}
+                                <div className="flex items-center gap-3 overflow-hidden">
+                                    <div className={`p-2 rounded-full shrink-0 ${t.type === 'income' ? 'bg-emerald-500/10 text-emerald-500' : t.type === 'transfer' ? 'bg-blue-500/10 text-blue-500' : 'bg-rose-500/10 text-rose-500'}`}>
+                                        {t.type === 'transfer' ? <ArrowRightLeft className="w-5 h-5" /> : (() => {
+                                            const Icon = getCategoryIcon(iconName);
+                                            return <Icon className="w-5 h-5" />;
+                                        })()}
                                     </div>
-                                    <div>
-                                        <div className="font-medium text-white">{t.description || (t.type === 'transfer' ? 'Transfer' : 'İşlem')}</div>
-                                        <div className="text-xs text-slate-400">
-                                            {t.category} • {new Date(t.date).toLocaleDateString('tr-TR')}
-                                            {account && <span className="ml-2 text-indigo-400">• {account.name} {toAccount ? `→ ${toAccount.name}` : ''}</span>}
+                                    <div className="min-w-0">
+                                        <div className="font-medium text-white truncate">{t.category || (t.type === 'transfer' ? 'Transfer' : 'İşlem')}</div>
+                                        <div className="text-xs text-slate-400 truncate">
+                                            {new Date(t.date).toLocaleDateString('tr-TR')}
+                                            {account && <span> • {account.name} {toAccount ? `→ ${toAccount.name}` : ''}</span>}
                                         </div>
+                                        {t.description && (
+                                            <div className="text-[11px] text-slate-500 mt-0.5 truncate">{t.description}</div>
+                                        )}
                                     </div>
                                 </div>
-                                <div className="flex items-center gap-3">
-                                    <span className={`font-semibold ${t.type === 'income' ? 'text-emerald-400' : t.type === 'transfer' ? 'text-blue-400' : 'text-rose-400'}`}>
+                                <div className="flex items-center gap-3 ml-2 shrink-0">
+                                    <span className={`font-semibold whitespace-nowrap ${t.type === 'income' ? 'text-emerald-400' : t.type === 'transfer' ? 'text-blue-400' : 'text-rose-400'}`}>
                                         {t.type === 'income' ? '+' : t.type === 'transfer' ? '' : '-'}{new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(t.amount)}
                                     </span>
                                     <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">

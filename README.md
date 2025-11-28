@@ -18,7 +18,9 @@
     *   **Çoklu Hesap:** Nakit, Banka, Kredi Kartı gibi farklı hesaplar oluşturun ve yönetin.
     *   **Transfer:** Hesaplar arası para transferi yapın.
     *   **Detaylı Takip:** Gelir ve giderlerinizi kategorize edin, hesap bazlı bakiyelerinizi görün.
-    *   **Düzenleme:** Hesapları ve geçmiş işlemleri (tutar, açıklama, tarih vb.) kolayca düzenleyin.
+    *   **Kategori Sistemi:** Harcamalarınızı ana ve alt kategorilerle (Gıda > Market, Ulaşım > Yakıt vb.) detaylıca sınıflandırın. Her kategoriye özel ikonlarla görsel takip yapın.
+    *   **Tarih ve Saat Seçimi:** İşlemlerinizi geçmişe dönük veya ileri tarihli olarak, saat detayına kadar kaydedin.
+    *   **Düzenleme:** Hesapları ve geçmiş işlemleri (tutar, açıklama, tarih, kategori vb.) kolayca düzenleyin.
 *   **Yatırım Portföyü:** Hisse senedi, yatırım fonu, gram altın ve döviz varlıklarınızı kaydedin.
 *   **PWA Desteği:** Mobil cihazınıza uygulama olarak kurabilir ve tam ekran deneyimiyle kullanabilirsiniz.
 *   **Karanlık Mod:** Göz yormayan, modern ve şık tasarım.
