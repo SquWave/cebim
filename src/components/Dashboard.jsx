@@ -55,7 +55,7 @@ const Dashboard = ({ transactions, assets, accounts = [] }) => {
                             <Wallet className="w-4 h-4 text-indigo-400" />
                         </div>
                         <div>
-                            <div className="text-xs text-slate-400">Nakit</div>
+                            <div className="text-xs text-slate-400">Cüzdan</div>
                             <div className="text-sm font-semibold text-slate-200">
                                 {new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(totalCash)}
                             </div>

@@ -21,7 +21,14 @@
     *   **Kategori Sistemi:** Harcamalarınızı ana ve alt kategorilerle (Gıda > Market, Ulaşım > Yakıt vb.) detaylıca sınıflandırın. Her kategoriye özel ikonlarla görsel takip yapın.
     *   **Tarih ve Saat Seçimi:** İşlemlerinizi geçmişe dönük veya ileri tarihli olarak, saat detayına kadar kaydedin.
     *   **Düzenleme:** Hesapları ve geçmiş işlemleri (tutar, açıklama, tarih, kategori vb.) kolayca düzenleyin.
-*   **Yatırım Portföyü:** Hisse senedi, yatırım fonu, gram altın ve döviz varlıklarınızı kaydedin.
+*   **Yatırım Portföyü:**
+    *   **Detaylı Takip:** Hisse senedi, fon, altın ve döviz varlıklarınızı "lot" bazlı (her alım ayrı ayrı) kaydedin.
+    *   **Gerçek Maliyet:** Ortalama maliyet ve kâr/zarar durumunuz, tüm alım satım geçmişiniz baz alınarak kuruşu kuruşuna hesaplanır.
+    *   **Varlık Dağılımı:** Portföyünüzün hangi varlıklardan oluştuğunu yüzdelik dilimlerle pasta grafiğinde görün.
+    *   **Performans Kartları:** Her varlığın ve ana kategorinin (Altın, Hisse vb.) toplam getirisini anlık takip edin.
+*   **Gelişmiş Grafikler:**
+    *   **İnteraktif Pasta Grafik:** Harcamalarınızı kategorilere göre inceleyin. Dilimlere tıklayarak alt kategorilere (örn: Gıda > Market) inin ve detaylı analiz yapın.
+    *   **Trend Analizi:** Varlıklarınızın zaman içindeki değişimini grafik üzerinde izleyin.
 *   **PWA Desteği:** Mobil cihazınıza uygulama olarak kurabilir ve tam ekran deneyimiyle kullanabilirsiniz.
 *   **Karanlık Mod:** Göz yormayan, modern ve şık tasarım.
 
@@ -84,6 +91,7 @@ Bu projeyi kendi bilgisayarınızda çalıştırmak için aşağıdaki adımlar�
 *   **React** (Vite ile)
 *   **Tailwind CSS** (Tasarım)
 *   **Lucide React** (İkonlar)
+*   **Recharts** (Gelişmiş Grafikler)
 *   **QR Code & Scanner** (Hızlı Giriş)
 
 ### Backend & Veri

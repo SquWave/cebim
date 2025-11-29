@@ -1,16 +1,18 @@
 import React, { useState } from 'react';
-import { LayoutDashboard, Wallet, PieChart, Settings as SettingsIcon } from 'lucide-react';
+import { LayoutDashboard, Wallet, PieChart, Settings as SettingsIcon, BarChart3 } from 'lucide-react';
 import Dashboard from './components/Dashboard';
 import WalletComponent from './components/Wallet';
 import Portfolio from './components/Portfolio';
 import Settings from './components/Settings';
 import LoginScreen from './components/LoginScreen';
+import Statistics from './components/Statistics';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { useFirestore } from './hooks/useFirestore';
+import { useMarketData } from './hooks/useMarketData';
 import { DEFAULT_INCOME_CATEGORIES, DEFAULT_EXPENSE_CATEGORIES } from './data/defaultCategories';
 
 const AuthenticatedApp = () => {
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const [activeTab, setActiveTab] = useState('dashboard'); // 'dashboard', 'portfolio', 'wallet', 'statistics', 'settings'
   const { user } = useAuth();
 
   // Firestore Hooks
@@ -18,6 +20,7 @@ const AuthenticatedApp = () => {
   const { data: assets, add: addAsset, update: updateAsset, remove: removeAsset } = useFirestore('assets');
   const { data: accounts, add: addAccount, update: updateAccount, remove: removeAccount } = useFirestore('accounts');
   const { data: categories, add: addCategory } = useFirestore('categories');
+  const marketData = useMarketData(assets);
 
   // Seed Categories
   React.useEffect(() => {
@@ -54,6 +57,8 @@ const AuthenticatedApp = () => {
         return <Portfolio assets={assets} onAddAsset={addAsset} onUpdateAsset={updateAsset} onDeleteAsset={removeAsset} />;
       case 'settings':
         return <Settings />;
+      case 'statistics':
+        return <Statistics transactions={transactions} accounts={accounts} categories={categories} assets={assets} marketData={marketData} />;
       default:
         return <Dashboard transactions={transactions} assets={assets} />;
     }
@@ -108,7 +113,15 @@ const AuthenticatedApp = () => {
               }`}
           >
             <PieChart className="h-5 w-5" />
-            <span className="text-[10px] font-medium">Portföy</span>
+            <span className="text-[10px] font-medium">Yatırım</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('statistics')}
+            className={`flex flex-col items-center justify-center w-full h-full space-y-1 ${activeTab === 'statistics' ? 'text-indigo-400' : 'text-slate-500 hover:text-slate-300'
+              }`}
+          >
+            <BarChart3 className="h-5 w-5" />
+            <span className="text-[10px] font-medium">Analiz</span>
           </button>
         </div>
       </nav>

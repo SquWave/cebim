@@ -478,7 +478,7 @@ const Portfolio = ({ assets, onAddAsset, onUpdateAsset, onDeleteAsset }) => {
         <div className="pb-20">
             <div className="flex justify-between items-center mb-6">
                 <div>
-                    <h2 className="text-2xl font-bold text-white">Portföy</h2>
+                    <h2 className="text-2xl font-bold text-white">Yatırım</h2>
                     {lastUpdated && (
                         <p className="text-xs text-slate-500 mt-1">
                             Son Güncelleme: {lastUpdated.toLocaleTimeString()}
