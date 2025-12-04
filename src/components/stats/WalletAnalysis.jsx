@@ -4,79 +4,16 @@ import TrendChart from './TrendChart';
 import SpendingCharts from './SpendingCharts';
 import CashFlowComparison from './CashFlowComparison';
 import DetailedReport from './DetailedReport';
+import { getDateRange, filterTransactionsByDateRange } from '../../utils/dateUtils';
 
 const WalletAnalysis = ({ transactions = [], categories = [], accounts = [] }) => {
     const [dateFilter, setDateFilter] = useState('month');
     const [customRange, setCustomRange] = useState({ start: '', end: '' });
 
-    // Filter Transactions based on Date
+    // Filter Transactions based on Date (using shared utility)
     const filteredTransactions = useMemo(() => {
-        const now = new Date();
-        let start = new Date();
-        let end = new Date();
-
-        switch (dateFilter) {
-            case 'today':
-                start.setHours(0, 0, 0, 0);
-                end.setHours(23, 59, 59, 999);
-                break;
-            case 'week':
-                // Start of week (Monday)
-                const day = now.getDay() || 7; // Get current day number, converting Sun (0) to 7
-                if (day !== 1) start.setHours(-24 * (day - 1));
-                start.setHours(0, 0, 0, 0);
-                end.setHours(23, 59, 59, 999);
-                break;
-            case 'month':
-                // Start of month (1st day)
-                start.setDate(1);
-                start.setHours(0, 0, 0, 0);
-                end.setHours(23, 59, 59, 999);
-                break;
-            case 'year':
-                start.setMonth(0, 1);
-                start.setHours(0, 0, 0, 0);
-                end.setHours(23, 59, 59, 999);
-                break;
-            case '7days':
-                start.setDate(now.getDate() - 7);
-                start.setHours(0, 0, 0, 0);
-                end = now;
-                break;
-            case '30days':
-                start.setDate(now.getDate() - 30);
-                start.setHours(0, 0, 0, 0);
-                end = now;
-                break;
-            case '3months':
-                start.setMonth(now.getMonth() - 3);
-                start.setHours(0, 0, 0, 0);
-                end = now;
-                break;
-            case '6months':
-                start.setMonth(now.getMonth() - 6);
-                start.setHours(0, 0, 0, 0);
-                end = now;
-                break;
-            case '1year':
-                start.setFullYear(now.getFullYear() - 1);
-                start.setHours(0, 0, 0, 0);
-                end = now;
-                break;
-            case 'custom':
-                if (customRange.start) start = new Date(customRange.start);
-                if (customRange.end) end = new Date(customRange.end);
-                // Adjust end date to end of day if it's just a date string
-                if (customRange.end && customRange.end.length <= 10) end.setHours(23, 59, 59, 999);
-                break;
-            default:
-                break;
-        }
-
-        return transactions.filter(t => {
-            const tDate = new Date(t.date);
-            return tDate >= start && tDate <= end;
-        });
+        const { start, end } = getDateRange(dateFilter, customRange);
+        return filterTransactionsByDateRange(transactions, start, end);
     }, [transactions, dateFilter, customRange]);
 
     // Calculate Global Current Balance

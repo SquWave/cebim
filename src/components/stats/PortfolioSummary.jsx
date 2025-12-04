@@ -1,17 +1,8 @@
 import React, { useMemo } from 'react';
 import { TrendingUp, TrendingDown, TurkishLira, PiggyBank } from 'lucide-react';
+import { formatCurrency, safeNumber } from '../../utils/formatters';
 
 const PortfolioSummary = ({ assets = [], marketData = {} }) => {
-    // Helper to safely parse numbers
-    const safeNumber = (val) => {
-        if (typeof val === 'number') return val;
-        if (!val) return 0;
-        const strVal = String(val);
-        if (strVal.includes(',') && !strVal.includes('.')) {
-            return Number(strVal.replace(',', '.'));
-        }
-        return Number(strVal) || 0;
-    };
 
     const summary = useMemo(() => {
         let totalValue = 0;
@@ -83,7 +74,7 @@ const PortfolioSummary = ({ assets = [], marketData = {} }) => {
                         <span className="text-slate-300 font-medium">Toplam Değer</span>
                     </div>
                     <div className="text-xl font-bold text-white">
-                        {new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(summary.totalValue)}
+                        {formatCurrency(summary.totalValue)}
                     </div>
                 </div>
 
@@ -96,7 +87,7 @@ const PortfolioSummary = ({ assets = [], marketData = {} }) => {
                         <span className="text-slate-300 font-medium">Toplam Maliyet</span>
                     </div>
                     <div className="text-xl font-bold text-slate-300">
-                        {new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(summary.totalCost)}
+                        {formatCurrency(summary.totalCost)}
                     </div>
                 </div>
 
@@ -110,7 +101,7 @@ const PortfolioSummary = ({ assets = [], marketData = {} }) => {
                     </div>
                     <div className="text-right">
                         <div className={`text-xl font-bold ${summary.profitLoss >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                            {summary.profitLoss >= 0 ? '+' : ''}{new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(summary.profitLoss)}
+                            {summary.profitLoss >= 0 ? '+' : ''}{formatCurrency(summary.profitLoss)}
                         </div>
                         <div className={`text-xs font-medium ${summary.profitLoss >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
                             %{summary.profitLossPercentage.toFixed(2)}

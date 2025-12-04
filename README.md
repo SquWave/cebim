@@ -6,34 +6,26 @@
 
 ## 🌟 Özellikler
 
-*   **QR Kod ile Giriş:** Uzun anahtarları yazmakla uğraşmayın! Mobil cihazınızdan QR kodu taratarak saniyeler içinde giriş yapın.
-*   **Canlı Piyasa Verileri:** Midas API ve TEFAS entegrasyonu ile BIST hisse senetleri, yatırım fonları, döviz kurları (USD, EUR) ve gram altın fiyatlarını anlık olarak takip edin. Otomatik güncelleme sayesinde portföyünüz her zaman güncel kalır.
-*   **Akıllı Otomatik Tamamlama:** Hisse senedi ve fon kodlarını ararken anında öneriler alın.
-*   **Kâr/Zarar Analizi:** Varlıklarınızın maliyet ve güncel değerini karşılaştırarak net kâr/zarar durumunuzu görüntüleyin.
-*   **Ayarlar Sayfası:** Gizli anahtarınızı ve giriş QR kodunuzu güvenli bir şekilde görüntüleyin.
-*   **Bulut Senkronizasyon:** Verileriniz Firebase Firestore üzerinde güvenle saklanır. Telefonunuzda girdiğiniz veri anında bilgisayarınızda görünür.
 *   **Anahtarlı Giriş:** Üyelik derdi yok! Sistem tarafından üretilen "Gizli Anahtar" ile her yerden verilerinize ulaşın.
+*   **QR Kod ile Giriş:** Uzun anahtarları yazmakla uğraşmayın! Mobil cihazınızdan QR kodu taratarak saniyeler içinde giriş yapın.
+*   **Canlı Piyasa Verileri:** BIST hisse senetleri, yatırım fonları, döviz kurları ve gram altın fiyatlarını anlık olarak takip edin. Otomatik güncelleme sayesinde portföyünüz her zaman güncel kalır.
+*   **Kâr/Zarar Analizi:** Varlıklarınızın maliyet ve güncel değerini karşılaştırarak net kâr/zarar durumunuzu görüntüleyin.
+*   **Bulut Senkronizasyon:** Verileriniz Firebase Firestore üzerinde güvenle saklanır. Telefonunuzda girdiğiniz veri anında bilgisayarınızda görünür.
 *   **Hibrit Dashboard:** Nakit ve yatırım varlıklarınızı tek bir ekranda, net varlık olarak görüntüleyin.
 *   **Cüzdan Yönetimi:**
     *   **Çoklu Hesap:** Nakit, Banka, Kredi Kartı gibi farklı hesaplar oluşturun ve yönetin.
-    *   **Transfer:** Hesaplar arası para transferi yapın.
     *   **Detaylı Takip:** Gelir ve giderlerinizi kategorize edin, hesap bazlı bakiyelerinizi görün.
-    *   **Kategori Sistemi:** Harcamalarınızı ana ve alt kategorilerle (Gıda > Market, Ulaşım > Yakıt vb.) detaylıca sınıflandırın. Her kategoriye özel ikonlarla görsel takip yapın.
-    *   **Tarih ve Saat Seçimi:** İşlemlerinizi geçmişe dönük veya ileri tarihli olarak, saat detayına kadar kaydedin.
-    *   **Düzenleme:** Hesapları ve geçmiş işlemleri (tutar, açıklama, tarih, kategori vb.) kolayca düzenleyin.
+    *   **Kategori Sistemi:** Harcamalarınızı ana ve alt kategorilerle detaylıca sınıflandırın.
 *   **Yatırım Portföyü:**
-    *   **Detaylı Takip:** Hisse senedi, fon, altın ve döviz varlıklarınızı "lot" bazlı (her alım ayrı ayrı) kaydedin.
+    *   **Detaylı Takip:** Hisse senedi, fon, altın ve döviz varlıklarınızı "lot" bazlı kaydedin.
     *   **Gerçek Maliyet:** Ortalama maliyet ve kâr/zarar durumunuz, tüm alım satım geçmişiniz baz alınarak kuruşu kuruşuna hesaplanır.
     *   **Varlık Dağılımı:** Portföyünüzün hangi varlıklardan oluştuğunu yüzdelik dilimlerle pasta grafiğinde görün.
-    *   **Performans Kartları:** Her varlığın ve ana kategorinin (Altın, Hisse vb.) toplam getirisini anlık takip edin.
 *   **Gelişmiş Grafikler ve Analiz:**
     *   **İnteraktif Pasta Grafik:** Harcamalarınızı kategorilere göre inceleyin. Dilimlere tıklayarak alt kategorilere (örn: Gıda > Market) inin ve detaylı analiz yapın.
     *   **Akıllı Tarih Filtreleri:** "Tarih filtreleri ile harcamalarınızı esnek bir şekilde analiz edin.
-    *   **Harcama Dağılımı:** Günlük harcamalarınızı sütun grafiğinde tam zaman çizelgesiyle görüntüleyin.
     *   **Nakit Akışı Eğilimi:** Gelir, gider ve net durumunuzu karşılaştırmalı olarak izleyin. "Monotone" trend çizgisi ile nakit akışınızın yönünü pürüzsüz bir eğriyle takip edin.
     *   **Detaylı Rapor:** Gelir ve giderlerinizi tek bir tıkla değiştirerek ayrı ayrı raporlayın. Kategorilere göre detaylı döküm alın.
 *   **PWA Desteği:** Mobil cihazınıza uygulama olarak kurabilir ve tam ekran deneyimiyle kullanabilirsiniz.
-*   **Karanlık Mod:** Göz yormayan, modern ve şık tasarım.
 
 ## 🚀 Kurulum ve Çalıştırma
 

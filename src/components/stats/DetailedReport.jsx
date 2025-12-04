@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { ChevronDown, ChevronRight, Wallet } from 'lucide-react';
+import { formatCurrency } from '../../utils/formatters';
 
 const DetailedReport = ({ transactions = [], categories = [] }) => {
     const [expandedCategory, setExpandedCategory] = useState(null);
@@ -81,8 +82,8 @@ const DetailedReport = ({ transactions = [], categories = [] }) => {
                     <button
                         onClick={() => setReportType('expense')}
                         className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${reportType === 'expense'
-                                ? 'bg-rose-500/20 text-rose-400'
-                                : 'text-slate-400 hover:text-white'
+                            ? 'bg-rose-500/20 text-rose-400'
+                            : 'text-slate-400 hover:text-white'
                             }`}
                     >
                         Giderler
@@ -90,8 +91,8 @@ const DetailedReport = ({ transactions = [], categories = [] }) => {
                     <button
                         onClick={() => setReportType('income')}
                         className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${reportType === 'income'
-                                ? 'bg-emerald-500/20 text-emerald-400'
-                                : 'text-slate-400 hover:text-white'
+                            ? 'bg-emerald-500/20 text-emerald-400'
+                            : 'text-slate-400 hover:text-white'
                             }`}
                     >
                         Gelirler
@@ -113,7 +114,7 @@ const DetailedReport = ({ transactions = [], categories = [] }) => {
                                     <span className="font-medium text-white">{cat.name}</span>
                                 </div>
                                 <span className="font-semibold text-white">
-                                    {new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(cat.total)}
+                                    {formatCurrency(cat.total)}
                                 </span>
                             </button>
 
@@ -131,7 +132,7 @@ const DetailedReport = ({ transactions = [], categories = [] }) => {
                                                     <span className="text-sm text-slate-300">{sub.name}</span>
                                                 </div>
                                                 <span className="text-sm text-slate-300">
-                                                    {new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(sub.total)}
+                                                    {formatCurrency(sub.total)}
                                                 </span>
                                             </button>
 
@@ -147,7 +148,7 @@ const DetailedReport = ({ transactions = [], categories = [] }) => {
                                                                 </div>
                                                             </div>
                                                             <span className={`text-xs whitespace-nowrap ml-2 ${reportType === 'income' ? 'text-emerald-400' : 'text-rose-400'}`}>
-                                                                {reportType === 'expense' ? '-' : '+'}{new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(t.amount)}
+                                                                {reportType === 'expense' ? '-' : '+'}{formatCurrency(t.amount)}
                                                             </span>
                                                         </div>
                                                     ))}

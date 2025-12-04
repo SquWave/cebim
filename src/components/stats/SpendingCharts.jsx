@@ -1,6 +1,8 @@
 import React, { useMemo, useState } from 'react';
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { ArrowLeft } from 'lucide-react';
+import { getDateRange } from '../../utils/dateUtils';
+import { formatCurrency } from '../../utils/formatters';
 
 const SpendingCharts = ({ transactions = [], categories = [], dateFilter, customRange }) => {
     const [chartType, setChartType] = useState('pie'); // 'pie', 'bar', 'list'
@@ -52,70 +54,8 @@ const SpendingCharts = ({ transactions = [], categories = [], dateFilter, custom
     }, [expenseTransactions, categories, selectedCategory]);
 
     const dailyData = useMemo(() => {
-        // Helper to get date range
-        const getRange = () => {
-            const now = new Date();
-            let start = new Date();
-            let end = new Date();
-
-            switch (dateFilter) {
-                case 'today':
-                    start.setHours(0, 0, 0, 0);
-                    end.setHours(23, 59, 59, 999);
-                    break;
-                case 'week':
-                    const day = now.getDay() || 7;
-                    if (day !== 1) start.setHours(-24 * (day - 1));
-                    start.setHours(0, 0, 0, 0);
-                    end.setHours(23, 59, 59, 999);
-                    break;
-                case 'month':
-                    start.setDate(1);
-                    start.setHours(0, 0, 0, 0);
-                    end.setHours(23, 59, 59, 999);
-                    break;
-                case 'year':
-                    start.setMonth(0, 1);
-                    start.setHours(0, 0, 0, 0);
-                    end.setHours(23, 59, 59, 999);
-                    break;
-                case '7days':
-                    start.setDate(now.getDate() - 7);
-                    start.setHours(0, 0, 0, 0);
-                    end = now;
-                    break;
-                case '30days':
-                    start.setDate(now.getDate() - 30);
-                    start.setHours(0, 0, 0, 0);
-                    end = now;
-                    break;
-                case '3months':
-                    start.setMonth(now.getMonth() - 3);
-                    start.setHours(0, 0, 0, 0);
-                    end = now;
-                    break;
-                case '6months':
-                    start.setMonth(now.getMonth() - 6);
-                    start.setHours(0, 0, 0, 0);
-                    end = now;
-                    break;
-                case '1year':
-                    start.setFullYear(now.getFullYear() - 1);
-                    start.setHours(0, 0, 0, 0);
-                    end = now;
-                    break;
-                case 'custom':
-                    if (customRange.start) start = new Date(customRange.start);
-                    if (customRange.end) end = new Date(customRange.end);
-                    if (customRange.end && customRange.end.length <= 10) end.setHours(23, 59, 59, 999);
-                    break;
-                default:
-                    return null;
-            }
-            return { start, end };
-        };
-
-        const range = getRange();
+        // Use shared date utility
+        const range = getDateRange(dateFilter, customRange);
         const dayMap = {};
 
         // Initialize all days in range with 0
@@ -206,12 +146,12 @@ const SpendingCharts = ({ transactions = [], categories = [], dateFilter, custom
                 </div>
             </div>
 
-            <div className="h-64 w-full" style={{ minHeight: '256px' }}>
+            <div className="h-64 w-full" style={{ minHeight: '256px', minWidth: 0 }}>
                 {chartType === 'pie' && (
                     <div className="flex h-full">
                         {/* Chart Area */}
                         <div className="relative flex-1 h-full">
-                            <ResponsiveContainer width="100%" height="100%">
+                            <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={256}>
                                 <PieChart>
                                     <Pie
                                         data={activeData}
@@ -269,7 +209,7 @@ const SpendingCharts = ({ transactions = [], categories = [], dateFilter, custom
                 )}
 
                 {chartType === 'bar' && (
-                    <ResponsiveContainer width="100%" height="100%">
+                    <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={256}>
                         <BarChart data={dailyData}>
                             <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
                             <XAxis dataKey="date" stroke="#94a3b8" fontSize={10} tickLine={false} axisLine={false} />
@@ -277,7 +217,7 @@ const SpendingCharts = ({ transactions = [], categories = [], dateFilter, custom
                             <Tooltip
                                 cursor={{ fill: '#334155', opacity: 0.2 }}
                                 contentStyle={{ backgroundColor: '#1e293b', borderColor: '#334155', borderRadius: '0.75rem', color: '#f8fafc' }}
-                                formatter={(value) => new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(value)}
+                                formatter={(value) => formatCurrency(value)}
                             />
                             <Bar dataKey="amount" fill="#6366f1" radius={[4, 4, 0, 0]} />
                         </BarChart>
@@ -294,7 +234,7 @@ const SpendingCharts = ({ transactions = [], categories = [], dateFilter, custom
                             >
                                 <div className="flex justify-between text-sm mb-1">
                                     <span className="text-slate-200 font-medium">{cat.name}</span>
-                                    <span className="text-slate-400">{new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(cat.value)}</span>
+                                    <span className="text-slate-400">{formatCurrency(cat.value)}</span>
                                 </div>
                                 <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
                                     <div

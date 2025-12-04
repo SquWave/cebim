@@ -1,5 +1,6 @@
 import React from 'react';
 import { Wallet, TrendingUp, ArrowUpCircle, ArrowDownCircle } from 'lucide-react';
+import { formatCurrency } from '../utils/formatters';
 
 const Dashboard = ({ transactions, assets, accounts = [], marketData }) => {
     // Calculate Net Worth
@@ -50,7 +51,7 @@ const Dashboard = ({ transactions, assets, accounts = [], marketData }) => {
             <div className="bg-gradient-to-br from-slate-900 to-slate-800 p-6 rounded-2xl shadow-lg border border-slate-700">
                 <h2 className="text-slate-400 text-sm font-medium mb-1">Toplam Varlık</h2>
                 <div className="text-3xl font-bold text-white">
-                    {new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(netWorth)}
+                    {formatCurrency(netWorth)}
                 </div>
                 <div className="flex gap-4 mt-4">
                     <div className="flex items-center gap-2">
@@ -60,7 +61,7 @@ const Dashboard = ({ transactions, assets, accounts = [], marketData }) => {
                         <div>
                             <div className="text-xs text-slate-400">Cüzdan</div>
                             <div className="text-sm font-semibold text-slate-200">
-                                {new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(totalCash)}
+                                {formatCurrency(totalCash)}
                             </div>
                         </div>
                     </div>
@@ -71,7 +72,7 @@ const Dashboard = ({ transactions, assets, accounts = [], marketData }) => {
                         <div>
                             <div className="text-xs text-slate-400">Yatırım</div>
                             <div className="text-sm font-semibold text-slate-200">
-                                {new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(totalPortfolio)}
+                                {formatCurrency(totalPortfolio)}
                             </div>
                         </div>
                     </div>
@@ -86,7 +87,7 @@ const Dashboard = ({ transactions, assets, accounts = [], marketData }) => {
                         <span className="text-sm text-slate-400">Gelir</span>
                     </div>
                     <div className="text-lg font-bold text-emerald-400">
-                        +{new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(totalIncome)}
+                        +{formatCurrency(totalIncome)}
                     </div>
                 </div>
                 <div className="bg-slate-900 p-4 rounded-xl border border-slate-800">
@@ -95,7 +96,7 @@ const Dashboard = ({ transactions, assets, accounts = [], marketData }) => {
                         <span className="text-sm text-slate-400">Gider</span>
                     </div>
                     <div className="text-lg font-bold text-rose-400">
-                        -{new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(totalExpense)}
+                        -{formatCurrency(totalExpense)}
                     </div>
                 </div>
             </div>
@@ -139,10 +140,10 @@ const Dashboard = ({ transactions, assets, accounts = [], marketData }) => {
                                     </div>
                                     <div className="text-right">
                                         <div className="font-semibold text-slate-200">
-                                            {new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(displayValue)}
+                                            {formatCurrency(displayValue)}
                                         </div>
                                         <div className="text-xs text-slate-500">
-                                            {new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(currentPrice)} / adet
+                                            {formatCurrency(currentPrice)} / adet
                                         </div>
                                     </div>
                                 </div>

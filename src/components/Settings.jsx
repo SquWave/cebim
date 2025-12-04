@@ -123,7 +123,7 @@ const Settings = () => {
             </div>
 
             <div className="text-center text-xs text-slate-600 mt-8">
-                Cebim v1.4.2 • Güvenli Bağlantı
+                Cebim v1.4.3 • Güvenli Bağlantı
             </div>
 
             <div className="mt-8">

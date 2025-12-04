@@ -1,130 +1,16 @@
 import React, { useMemo } from 'react';
-import { ComposedChart, Line, Bar, Cell, ReferenceLine, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { ComposedChart, Line, Bar, Cell, ReferenceLine, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { TrendingUp, TrendingDown, Handshake } from 'lucide-react';
+import { getPeriodRanges, filterTransactionsByDateRange } from '../../utils/dateUtils';
+import { formatCurrency } from '../../utils/formatters';
 
 const CashFlowComparison = ({ transactions = [], dateFilter, customRange }) => {
-    // Helper to get previous period date range
-    const getPreviousPeriod = () => {
-        const now = new Date();
-        let start = new Date();
-        let end = new Date();
-        let prevStart = new Date();
-        let prevEnd = new Date();
-
-        switch (dateFilter) {
-            case 'today':
-                start.setHours(0, 0, 0, 0);
-                end.setHours(23, 59, 59, 999);
-                prevStart.setDate(start.getDate() - 1);
-                prevStart.setHours(0, 0, 0, 0);
-                prevEnd.setDate(end.getDate() - 1);
-                prevEnd.setHours(23, 59, 59, 999);
-                break;
-            case 'week':
-                const day = now.getDay() || 7;
-                if (day !== 1) start.setHours(-24 * (day - 1));
-                start.setHours(0, 0, 0, 0);
-                end.setHours(23, 59, 59, 999);
-                prevStart = new Date(start);
-                prevStart.setDate(start.getDate() - 7);
-                prevEnd = new Date(end);
-                prevEnd.setDate(end.getDate() - 7);
-                break;
-            case 'month':
-                start.setDate(1);
-                start.setHours(0, 0, 0, 0);
-                end.setHours(23, 59, 59, 999);
-                prevStart = new Date(start);
-                prevStart.setMonth(start.getMonth() - 1);
-                prevEnd = new Date(end);
-                prevEnd.setMonth(end.getMonth() - 1);
-                // Handle month end overflow
-                const lastDayPrevMonth = new Date(prevStart.getFullYear(), prevStart.getMonth() + 1, 0).getDate();
-                if (prevEnd.getDate() > lastDayPrevMonth) prevEnd.setDate(lastDayPrevMonth);
-                break;
-            case 'year':
-                start.setMonth(0, 1);
-                start.setHours(0, 0, 0, 0);
-                end.setHours(23, 59, 59, 999);
-                prevStart = new Date(start);
-                prevStart.setFullYear(start.getFullYear() - 1);
-                prevEnd = new Date(end);
-                prevEnd.setFullYear(end.getFullYear() - 1);
-                break;
-            case '7days':
-                start.setDate(now.getDate() - 7);
-                start.setHours(0, 0, 0, 0);
-                end = now;
-                prevStart = new Date(start);
-                prevStart.setDate(start.getDate() - 7);
-                prevEnd = new Date(end);
-                prevEnd.setDate(end.getDate() - 7);
-                break;
-            case '30days':
-                start.setDate(now.getDate() - 30);
-                start.setHours(0, 0, 0, 0);
-                end = now;
-                prevStart = new Date(start);
-                prevStart.setDate(start.getDate() - 30);
-                prevEnd = new Date(end);
-                prevEnd.setDate(end.getDate() - 30);
-                break;
-            case '3months':
-                start.setMonth(now.getMonth() - 3);
-                start.setHours(0, 0, 0, 0);
-                end = now;
-                prevStart = new Date(start);
-                prevStart.setMonth(start.getMonth() - 3);
-                prevEnd = new Date(end);
-                prevEnd.setMonth(end.getMonth() - 3);
-                break;
-            case '6months':
-                start.setMonth(now.getMonth() - 6);
-                start.setHours(0, 0, 0, 0);
-                end = now;
-                prevStart = new Date(start);
-                prevStart.setMonth(start.getMonth() - 6);
-                prevEnd = new Date(end);
-                prevEnd.setMonth(end.getMonth() - 6);
-                break;
-            case '1year':
-                start.setFullYear(now.getFullYear() - 1);
-                start.setHours(0, 0, 0, 0);
-                end = now;
-                prevStart = new Date(start);
-                prevStart.setFullYear(start.getFullYear() - 1);
-                prevEnd = new Date(end);
-                prevEnd.setFullYear(end.getFullYear() - 1);
-                break;
-            case 'custom':
-                if (customRange.start) start = new Date(customRange.start);
-                if (customRange.end) end = new Date(customRange.end);
-                if (customRange.end && customRange.end.length <= 10) end.setHours(23, 59, 59, 999);
-
-                // For custom, previous period is same duration before start
-                const duration = end - start;
-                prevEnd = new Date(start.getTime() - 1);
-                prevStart = new Date(prevEnd.getTime() - duration);
-                break;
-            default:
-                return null;
-        }
-        return { start, end, prevStart, prevEnd };
-    };
-
     const periodData = useMemo(() => {
-        const ranges = getPreviousPeriod();
+        const ranges = getPeriodRanges(dateFilter, customRange);
         if (!ranges) return null;
 
-        const currentTx = transactions.filter(t => {
-            const d = new Date(t.date);
-            return d >= ranges.start && d <= ranges.end;
-        });
-
-        const prevTx = transactions.filter(t => {
-            const d = new Date(t.date);
-            return d >= ranges.prevStart && d <= ranges.prevEnd;
-        });
+        const currentTx = filterTransactionsByDateRange(transactions, ranges.start, ranges.end);
+        const prevTx = filterTransactionsByDateRange(transactions, ranges.prevStart, ranges.prevEnd);
 
         const calculateTotals = (txs) => {
             let income = 0;
@@ -146,7 +32,7 @@ const CashFlowComparison = ({ transactions = [], dateFilter, customRange }) => {
         if (!periodData || !periodData.currentTx) return [];
 
         const { currentTx } = periodData;
-        const ranges = getPreviousPeriod();
+        const ranges = getPeriodRanges(dateFilter, customRange);
         if (!ranges) return [];
 
         // Initialize map with all dates in range
@@ -209,7 +95,7 @@ const CashFlowComparison = ({ transactions = [], dateFilter, customRange }) => {
                 net: item.income - item.expense
             }));
 
-    }, [periodData, dateFilter]);
+    }, [periodData, dateFilter, customRange]);
 
     if (!periodData) return null;
 
@@ -219,7 +105,7 @@ const CashFlowComparison = ({ transactions = [], dateFilter, customRange }) => {
         if (active && payload && payload.length) {
             const data = payload[0].payload;
             const date = new Date(data.fullDate).toLocaleDateString('tr-TR');
-            const value = new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(data.net);
+            const value = formatCurrency(data.net);
 
             return (
                 <div className="bg-slate-800 border border-slate-700 p-3 rounded-xl shadow-lg">
@@ -240,10 +126,10 @@ const CashFlowComparison = ({ transactions = [], dateFilter, customRange }) => {
                         <Handshake className="w-3 h-3" /> Net Durum
                     </div>
                     <div className={`text-lg font-bold ${current.net >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                        {new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(current.net)}
+                        {formatCurrency(current.net)}
                     </div>
                     <div className="text-[10px] text-slate-500 mt-1">
-                        Önceki: {new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(previous.net)}
+                        Önceki: {formatCurrency(previous.net)}
                     </div>
                 </div>
                 <div className="bg-slate-800 p-4 rounded-xl border border-slate-700">
@@ -251,10 +137,10 @@ const CashFlowComparison = ({ transactions = [], dateFilter, customRange }) => {
                         <TrendingUp className="w-3 h-3 text-emerald-500" /> Toplam Gelir
                     </div>
                     <div className="text-lg font-bold text-white">
-                        {new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(current.income)}
+                        {formatCurrency(current.income)}
                     </div>
                     <div className="text-[10px] text-slate-500 mt-1">
-                        Önceki: {new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(previous.income)}
+                        Önceki: {formatCurrency(previous.income)}
                     </div>
                 </div>
                 <div className="bg-slate-800 p-4 rounded-xl border border-slate-700">
@@ -262,10 +148,10 @@ const CashFlowComparison = ({ transactions = [], dateFilter, customRange }) => {
                         <TrendingDown className="w-3 h-3 text-rose-500" /> Toplam Gider
                     </div>
                     <div className="text-lg font-bold text-white">
-                        {new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(current.expense)}
+                        {formatCurrency(current.expense)}
                     </div>
                     <div className="text-[10px] text-slate-500 mt-1">
-                        Önceki: {new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(previous.expense)}
+                        Önceki: {formatCurrency(previous.expense)}
                     </div>
                 </div>
             </div>
@@ -273,9 +159,9 @@ const CashFlowComparison = ({ transactions = [], dateFilter, customRange }) => {
             {/* Detailed Comparison Chart */}
             <div className="bg-slate-800 rounded-2xl p-6 border border-slate-700">
                 <h3 className="text-lg font-semibold text-white mb-6">Nakit Akış Eğilimi</h3>
-                <div className="h-64 w-full">
+                <div className="h-64 w-full" style={{ minHeight: 256, minWidth: 0 }}>
                     {chartData.length > 0 ? (
-                        <ResponsiveContainer width="100%" height="100%">
+                        <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={256}>
                             <ComposedChart data={chartData} stackOffset="sign">
                                 <defs>
                                     <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
