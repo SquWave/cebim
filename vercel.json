@@ -1,0 +1,20 @@
+{
+    "$schema": "https://openapi.vercel.sh/vercel.json",
+    "buildCommand": "npm run build",
+    "outputDirectory": "dist",
+    "framework": "vite",
+    "rewrites": [
+        {
+            "source": "/api/stocks",
+            "destination": "/api/stocks"
+        },
+        {
+            "source": "/api/fx",
+            "destination": "/api/fx"
+        },
+        {
+            "source": "/api/fund/:code",
+            "destination": "/api/fund/[code]"
+        }
+    ]
+}

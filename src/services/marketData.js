@@ -1,9 +1,14 @@
 
+// Determine API base URL based on environment
+// In production (Vercel), use relative paths (/api/...)
+// In development, use localhost:3001
+const API_BASE_URL = import.meta.env.PROD ? '' : 'http://localhost:3001';
+
 // Free API for currencies (USD, EUR only)
-const CURRENCY_API_URL = 'http://localhost:3001/api/fx';
+const CURRENCY_API_URL = `${API_BASE_URL}/api/fx`;
 
 // Stock data via backend proxy (bypasses CORS)
-const MIDAS_API_URL = 'http://localhost:3001/api/stocks';
+const MIDAS_API_URL = `${API_BASE_URL}/api/stocks`;
 
 // Fallback manual rates
 const FALLBACK_RATES = {
@@ -236,7 +241,7 @@ const fetchStockPrice = async (code) => {
 // Helper to fetch Fund data via backend proxy (TEFAS)
 const fetchFundPrice = async (code) => {
     try {
-        const response = await fetch(`http://localhost:3001/api/fund/${code}`);
+        const response = await fetch(`${API_BASE_URL}/api/fund/${code}`);
         if (!response.ok) return null;
         const data = await response.json();
         return data.price;
