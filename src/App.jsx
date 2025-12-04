@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { LayoutDashboard, Wallet, PieChart, Settings as SettingsIcon, BarChart3 } from 'lucide-react';
+import { LayoutDashboard, Wallet, PieChart, Settings as SettingsIcon, BarChart3, Eye, EyeOff } from 'lucide-react';
 import Dashboard from './components/Dashboard';
 import WalletComponent from './components/Wallet';
 import Portfolio from './components/Portfolio';
@@ -13,6 +13,7 @@ import { DEFAULT_INCOME_CATEGORIES, DEFAULT_EXPENSE_CATEGORIES } from './data/de
 
 const AuthenticatedApp = () => {
   const [activeTab, setActiveTab] = useState('dashboard'); // 'dashboard', 'portfolio', 'wallet', 'statistics', 'settings'
+  const [privacyMode, setPrivacyMode] = useState(false); // Hide all balances when true
   const { user } = useAuth();
 
   // Firestore Hooks
@@ -40,7 +41,7 @@ const AuthenticatedApp = () => {
   const renderContent = () => {
     switch (activeTab) {
       case 'dashboard':
-        return <Dashboard transactions={transactions} assets={assets} accounts={accounts} marketData={marketData} />;
+        return <Dashboard transactions={transactions} assets={assets} accounts={accounts} marketData={marketData} privacyMode={privacyMode} />;
       case 'wallet':
         return <WalletComponent
           transactions={transactions}
@@ -52,15 +53,16 @@ const AuthenticatedApp = () => {
           onUpdateAccount={updateAccount}
           onDeleteAccount={removeAccount}
           categories={categories}
+          privacyMode={privacyMode}
         />;
       case 'portfolio':
-        return <Portfolio assets={assets} onAddAsset={addAsset} onUpdateAsset={updateAsset} onDeleteAsset={removeAsset} />;
+        return <Portfolio assets={assets} onAddAsset={addAsset} onUpdateAsset={updateAsset} onDeleteAsset={removeAsset} privacyMode={privacyMode} />;
       case 'settings':
         return <Settings />;
       case 'statistics':
-        return <Statistics transactions={transactions} accounts={accounts} categories={categories} assets={assets} marketData={marketData} />;
+        return <Statistics transactions={transactions} accounts={accounts} categories={categories} assets={assets} marketData={marketData} privacyMode={privacyMode} />;
       default:
-        return <Dashboard transactions={transactions} assets={assets} marketData={marketData} />;
+        return <Dashboard transactions={transactions} assets={assets} marketData={marketData} privacyMode={privacyMode} />;
     }
   };
 
@@ -73,6 +75,13 @@ const AuthenticatedApp = () => {
             Cebim
           </h1>
           <div className="flex items-center gap-2">
+            <button
+              onClick={() => setPrivacyMode(!privacyMode)}
+              className={`p-2 rounded-full transition-colors ${privacyMode ? 'bg-amber-500/20 text-amber-400' : 'text-slate-400 hover:text-white'}`}
+              title={privacyMode ? 'Bakiyeleri göster' : 'Bakiyeleri gizle'}
+            >
+              {privacyMode ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+            </button>
             <button
               onClick={() => setActiveTab('settings')}
               className={`p-2 rounded-full transition-colors ${activeTab === 'settings' ? 'bg-slate-800 text-white' : 'text-slate-400 hover:text-white'}`}

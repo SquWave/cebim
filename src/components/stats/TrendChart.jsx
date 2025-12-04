@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
-const TrendChart = ({ transactions = [], currentBalance = 0 }) => {
+const TrendChart = ({ transactions = [], currentBalance = 0, privacyMode = false }) => {
     // Helper to safely parse numbers
     const safeNumber = (val) => {
         if (typeof val === 'number') return val;
@@ -97,10 +97,10 @@ const TrendChart = ({ transactions = [], currentBalance = 0 }) => {
                 </div>
                 <div className={`text-right ${totalChange >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
                     <div className="text-xl font-bold">
-                        {totalChange >= 0 ? '+' : ''}{new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(totalChange)}
+                        {privacyMode ? '₺***' : `${totalChange >= 0 ? '+' : ''}${new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(totalChange)}`}
                     </div>
                     <div className="text-xs font-medium bg-slate-900/50 px-2 py-1 rounded-lg inline-block">
-                        %{percentageChange}
+                        {privacyMode ? '***' : `%${percentageChange}`}
                     </div>
                 </div>
             </div>
@@ -128,12 +128,12 @@ const TrendChart = ({ transactions = [], currentBalance = 0 }) => {
                             fontSize={12}
                             tickLine={false}
                             axisLine={false}
-                            tickFormatter={(value) => new Intl.NumberFormat('tr-TR', { notation: "compact", compactDisplay: "short" }).format(value)}
+                            tickFormatter={(value) => privacyMode ? '***' : new Intl.NumberFormat('tr-TR', { notation: "compact", compactDisplay: "short" }).format(value)}
                         />
                         <Tooltip
                             contentStyle={{ backgroundColor: '#1e293b', borderColor: '#334155', borderRadius: '0.75rem', color: '#f8fafc' }}
                             itemStyle={{ color: '#818cf8' }}
-                            formatter={(value) => new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(value)}
+                            formatter={(value) => privacyMode ? '₺***' : new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(value)}
                             labelStyle={{ color: '#94a3b8', marginBottom: '0.5rem' }}
                         />
                         <Area

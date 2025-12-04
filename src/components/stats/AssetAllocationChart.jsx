@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 
-const AssetAllocationChart = ({ assets = [], marketData = {} }) => {
+const AssetAllocationChart = ({ assets = [], marketData = {}, privacyMode = false }) => {
     const data = useMemo(() => {
         const typeMap = {};
 
@@ -57,7 +57,7 @@ const AssetAllocationChart = ({ assets = [], marketData = {} }) => {
                         </Pie>
                         <Tooltip
                             contentStyle={{ backgroundColor: '#1e293b', borderColor: '#334155', borderRadius: '0.75rem', color: '#f8fafc' }}
-                            formatter={(value) => new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(value)}
+                            formatter={(value) => privacyMode ? '₺***' : new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(value)}
                         />
                         <Legend
                             layout="vertical"

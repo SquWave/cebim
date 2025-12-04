@@ -8,6 +8,7 @@
 
 *   **Anahtarlı Giriş:** Üyelik derdi yok! Sistem tarafından üretilen "Gizli Anahtar" ile her yerden verilerinize ulaşın.
 *   **QR Kod ile Giriş:** Uzun anahtarları yazmakla uğraşmayın! Mobil cihazınızdan QR kodu taratarak saniyeler içinde giriş yapın.
+*   **Gizlilik Modu:** Bakiyelerinizi meraklı gözlerden koruyun! Sağ üstteki göz ikonuna tıklayarak tüm bakiye ve tutarları anında gizleyin. Toplu taşımada, ofiste veya kamusal alanlarda finansal verileriniz güvende kalır.
 *   **Canlı Piyasa Verileri:** BIST hisse senetleri, yatırım fonları, döviz kurları ve gram altın fiyatlarını anlık olarak takip edin. Otomatik güncelleme sayesinde portföyünüz her zaman güncel kalır.
 *   **Kâr/Zarar Analizi:** Varlıklarınızın maliyet ve güncel değerini karşılaştırarak net kâr/zarar durumunuzu görüntüleyin.
 *   **Bulut Senkronizasyon:** Verileriniz Firebase Firestore üzerinde güvenle saklanır. Telefonunuzda girdiğiniz veri anında bilgisayarınızda görünür.
@@ -101,6 +102,7 @@ Bu proje **"Sistem Tarafından Üretilen Güvenli Anahtar"** yöntemiyle çalı�
 *   **Giriş:** Bu anahtarı kullanarak veya QR kodu taratarak istediğiniz cihazdan verilerinize erişirsiniz.
 *   **Anonimlik:** E-posta, telefon veya isim vermenize gerek yoktur.
 *   **Veri:** Verileriniz Google Firebase altyapısında, sadece anahtar sahibinin erişebileceği şekilde saklanır.
+*   **Gizlilik Modu:** Uygulamada göz ikonuna tıklayarak tüm bakiye ve tutar bilgilerinizi `₺***` ile maskeleyebilirsiniz. Bu özellik, kamusal alanlarda finansal verilerinizin başkaları tarafından görülmesini engeller.
 
 > **ÖNEMLİ:** Anahtarınızı kaybederseniz verilerinizi kurtarmanın bir yolu yoktur. Lütfen anahtarınızı güvenli bir yere kaydedin.
 

@@ -6,7 +6,7 @@ import CashFlowComparison from './CashFlowComparison';
 import DetailedReport from './DetailedReport';
 import { getDateRange, filterTransactionsByDateRange } from '../../utils/dateUtils';
 
-const WalletAnalysis = ({ transactions = [], categories = [], accounts = [] }) => {
+const WalletAnalysis = ({ transactions = [], categories = [], accounts = [], privacyMode = false }) => {
     const [dateFilter, setDateFilter] = useState('month');
     const [customRange, setCustomRange] = useState({ start: '', end: '' });
 
@@ -57,16 +57,16 @@ const WalletAnalysis = ({ transactions = [], categories = [], accounts = [] }) =
             {/* Charts */}
             <div className="space-y-6">
                 {/* Trend Chart */}
-                <TrendChart transactions={filteredTransactions} currentBalance={currentBalance} />
+                <TrendChart transactions={filteredTransactions} currentBalance={currentBalance} privacyMode={privacyMode} />
 
                 {/* Spending Distribution */}
-                <SpendingCharts transactions={filteredTransactions} categories={categories} dateFilter={dateFilter} customRange={customRange} />
+                <SpendingCharts transactions={filteredTransactions} categories={categories} dateFilter={dateFilter} customRange={customRange} privacyMode={privacyMode} />
 
                 {/* Cash Flow Comparison */}
-                <CashFlowComparison transactions={transactions} dateFilter={dateFilter} customRange={customRange} />
+                <CashFlowComparison transactions={transactions} dateFilter={dateFilter} customRange={customRange} privacyMode={privacyMode} />
 
                 {/* Detailed Report */}
-                <DetailedReport transactions={filteredTransactions} categories={categories} />
+                <DetailedReport transactions={filteredTransactions} categories={categories} privacyMode={privacyMode} />
             </div>
         </div>
     );

@@ -52,7 +52,7 @@ const computeAggregatedValues = (lotsAsset) => {
     return { totalAmount, avgCost, currentPrice, totalValue, totalProfit, profitPercentage };
 };
 
-const Portfolio = ({ assets, onAddAsset, onUpdateAsset, onDeleteAsset }) => {
+const Portfolio = ({ assets, onAddAsset, onUpdateAsset, onDeleteAsset, privacyMode = false }) => {
     const [isAdding, setIsAdding] = useState(false);
     const [name, setName] = useState('');
     const [amount, setAmount] = useState('');
@@ -198,7 +198,21 @@ const Portfolio = ({ assets, onAddAsset, onUpdateAsset, onDeleteAsset }) => {
         e.preventDefault();
         if (!name || !amount || !cost) return;
 
-        let initialPrice = Number(cost);
+        // Validate amount and cost
+        const numAmount = Number(amount);
+        const numCost = Number(cost);
+
+        if (numAmount <= 0) {
+            alert("Lütfen 0'dan büyük bir adet girin.");
+            return;
+        }
+
+        if (numCost <= 0) {
+            alert("Lütfen 0'dan büyük bir maliyet girin.");
+            return;
+        }
+
+        let initialPrice = numCost;
 
         // For currency assets, use live FX rate instead of cost
         if (type === 'currency' && rates) {
@@ -241,8 +255,8 @@ const Portfolio = ({ assets, onAddAsset, onUpdateAsset, onDeleteAsset }) => {
                 // Add new lot to existing asset
                 const newLot = {
                     id: `lot_${Date.now()}`,
-                    amount: Number(amount),
-                    cost: Number(cost),
+                    amount: numAmount,
+                    cost: numCost,
                     price: initialPrice,
                     addedAt: Date.now()
                 };
@@ -262,8 +276,8 @@ const Portfolio = ({ assets, onAddAsset, onUpdateAsset, onDeleteAsset }) => {
                     expanded: false,
                     lots: [{
                         id: `lot_${Date.now()}`,
-                        amount: Number(amount),
-                        cost: Number(cost),
+                        amount: numAmount,
+                        cost: numCost,
                         price: initialPrice,
                         addedAt: Date.now()
                     }]
@@ -292,6 +306,7 @@ const Portfolio = ({ assets, onAddAsset, onUpdateAsset, onDeleteAsset }) => {
     };
 
     const formatCurrency = (value) => {
+        if (privacyMode) return '₺***';
         return new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(value);
     };
 
@@ -301,10 +316,23 @@ const Portfolio = ({ assets, onAddAsset, onUpdateAsset, onDeleteAsset }) => {
     };
 
     const handleSaveLot = async (asset, lotId) => {
+        const newAmount = Number(editForm.amount);
+        const newCost = Number(editForm.cost);
+
+        if (!newAmount || newAmount <= 0) {
+            alert("Lütfen 0'dan büyük bir adet girin.");
+            return;
+        }
+
+        if (!newCost || newCost <= 0) {
+            alert("Lütfen 0'dan büyük bir maliyet girin.");
+            return;
+        }
+
         try {
             const updatedLots = asset.lots.map(lot =>
                 lot.id === lotId
-                    ? { ...lot, amount: Number(editForm.amount), cost: Number(editForm.cost) }
+                    ? { ...lot, amount: newAmount, cost: newCost }
                     : lot
             );
 
@@ -670,7 +698,7 @@ const Portfolio = ({ assets, onAddAsset, onUpdateAsset, onDeleteAsset }) => {
                                                 <div className="text-xs text-slate-400 capitalize">
                                                     {asset.type === 'stock' ? 'Hisse Senedi' : asset.type === 'fund' ? 'Yatırım Fonu' : asset.type === 'gold' ? 'Gram Altın' : 'Döviz'}
                                                     <span className="mx-1">•</span>
-                                                    {totalAmount} Adet
+                                                    {privacyMode ? '***' : totalAmount} Adet
 
                                                 </div>
                                             </div>
@@ -680,7 +708,7 @@ const Portfolio = ({ assets, onAddAsset, onUpdateAsset, onDeleteAsset }) => {
                                                 {formatCurrency(totalValue)}
                                             </div>
                                             <div className={`text-xs font-medium ${isProfit ? 'text-emerald-400' : 'text-rose-400'}`}>
-                                                {isProfit ? '+' : ''}{formatCurrency(totalProfit)} ({isProfit ? '+' : ''}{profitPercentage.toFixed(2)}%)
+                                                {privacyMode ? '***' : `${isProfit ? '+' : ''}${formatCurrency(totalProfit)} (${isProfit ? '+' : ''}${profitPercentage.toFixed(2)}%)`}
                                             </div>
                                         </div>
                                     </div>
@@ -739,7 +767,11 @@ const Portfolio = ({ assets, onAddAsset, onUpdateAsset, onDeleteAsset }) => {
                                         </button>
 
                                         <button
-                                            onClick={() => onDeleteAsset(asset.id)}
+                                            onClick={() => {
+                                                if (confirm('Bu varlığı silmek istediğinize emin misiniz? Tüm alım ve satış kayıtları da silinecektir.')) {
+                                                    onDeleteAsset(asset.id);
+                                                }
+                                            }}
                                             className="p-2 text-slate-500 hover:text-rose-500 transition-colors"
                                         >
                                             <Trash2 className="w-4 h-4" />

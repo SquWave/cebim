@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { ChevronDown, ChevronRight, TrendingUp, TrendingDown } from 'lucide-react';
 
-const AssetPerformanceCards = ({ assets = [], marketData = {} }) => {
+const AssetPerformanceCards = ({ assets = [], marketData = {}, privacyMode = false }) => {
     const [expandedClass, setExpandedClass] = useState(null);
 
     // Helper to safely parse numbers
@@ -125,11 +125,11 @@ const AssetPerformanceCards = ({ assets = [], marketData = {} }) => {
                             </div>
                             <div className="text-right">
                                 <div className="font-semibold text-white">
-                                    {new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(cls.totalValue)}
+                                    {privacyMode ? '₺***' : new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(cls.totalValue)}
                                 </div>
                                 <div className={`text-xs font-medium flex items-center justify-end gap-1 ${cls.pl >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
                                     {cls.pl >= 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
-                                    {cls.pl >= 0 ? '+' : ''}{new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(cls.pl)} (%{cls.plPercent.toFixed(2)})
+                                    {privacyMode ? '***' : `${cls.pl >= 0 ? '+' : ''}${new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(cls.pl)} (%${cls.plPercent.toFixed(2)})`}
                                 </div>
                             </div>
                         </button>
@@ -142,15 +142,15 @@ const AssetPerformanceCards = ({ assets = [], marketData = {} }) => {
                                         <div>
                                             <div className="font-medium text-slate-200">{asset.name || asset.symbol}</div>
                                             <div className="text-xs text-slate-400">
-                                                {asset.currentAmount} Adet • Ort. {new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(asset.avgCost)}
+                                                {privacyMode ? '***' : asset.currentAmount} Adet • Ort. {privacyMode ? '₺***' : new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(asset.avgCost)}
                                             </div>
                                         </div>
                                         <div className="text-right">
                                             <div className="text-sm text-slate-300">
-                                                {new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(asset.value)}
+                                                {privacyMode ? '₺***' : new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(asset.value)}
                                             </div>
                                             <div className={`text-xs ${asset.pl >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                                                {asset.pl >= 0 ? '+' : ''}{new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(asset.pl)} (%{asset.plPercent.toFixed(2)})
+                                                {privacyMode ? '***' : `${asset.pl >= 0 ? '+' : ''}${new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(asset.pl)} (%${asset.plPercent.toFixed(2)})`}
                                             </div>
                                         </div>
                                     </div>

@@ -3,7 +3,7 @@ import { PieChart, Wallet } from 'lucide-react';
 import WalletAnalysis from './stats/WalletAnalysis';
 import PortfolioPerformance from './stats/PortfolioPerformance';
 
-const Statistics = ({ transactions = [], accounts = [], categories = [], assets = [], marketData = {} }) => {
+const Statistics = ({ transactions = [], accounts = [], categories = [], assets = [], marketData = {}, privacyMode = false }) => {
     const [activeTab, setActiveTab] = useState('wallet'); // 'wallet' or 'portfolio'
 
     return (
@@ -34,9 +34,9 @@ const Statistics = ({ transactions = [], accounts = [], categories = [], assets 
             {/* Content Area */}
             <div className="space-y-6">
                 {activeTab === 'wallet' ? (
-                    <WalletAnalysis transactions={transactions} categories={categories} accounts={accounts} />
+                    <WalletAnalysis transactions={transactions} categories={categories} accounts={accounts} privacyMode={privacyMode} />
                 ) : (
-                    <PortfolioPerformance assets={assets} marketData={marketData} />
+                    <PortfolioPerformance assets={assets} marketData={marketData} privacyMode={privacyMode} />
                 )}
             </div>
         </div>

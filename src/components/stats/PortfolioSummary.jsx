@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import { TrendingUp, TrendingDown, TurkishLira, PiggyBank } from 'lucide-react';
 import { formatCurrency, safeNumber } from '../../utils/formatters';
 
-const PortfolioSummary = ({ assets = [], marketData = {} }) => {
+const PortfolioSummary = ({ assets = [], marketData = {}, privacyMode = false }) => {
 
     const summary = useMemo(() => {
         let totalValue = 0;
@@ -74,7 +74,7 @@ const PortfolioSummary = ({ assets = [], marketData = {} }) => {
                         <span className="text-slate-300 font-medium">Toplam Değer</span>
                     </div>
                     <div className="text-xl font-bold text-white">
-                        {formatCurrency(summary.totalValue)}
+                        {privacyMode ? '₺***' : formatCurrency(summary.totalValue)}
                     </div>
                 </div>
 
@@ -87,7 +87,7 @@ const PortfolioSummary = ({ assets = [], marketData = {} }) => {
                         <span className="text-slate-300 font-medium">Toplam Maliyet</span>
                     </div>
                     <div className="text-xl font-bold text-slate-300">
-                        {formatCurrency(summary.totalCost)}
+                        {privacyMode ? '₺***' : formatCurrency(summary.totalCost)}
                     </div>
                 </div>
 
@@ -101,10 +101,10 @@ const PortfolioSummary = ({ assets = [], marketData = {} }) => {
                     </div>
                     <div className="text-right">
                         <div className={`text-xl font-bold ${summary.profitLoss >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                            {summary.profitLoss >= 0 ? '+' : ''}{formatCurrency(summary.profitLoss)}
+                            {privacyMode ? '₺***' : `${summary.profitLoss >= 0 ? '+' : ''}${formatCurrency(summary.profitLoss)}`}
                         </div>
                         <div className={`text-xs font-medium ${summary.profitLoss >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
-                            %{summary.profitLossPercentage.toFixed(2)}
+                            {privacyMode ? '***' : `%${summary.profitLossPercentage.toFixed(2)}`}
                         </div>
                     </div>
                 </div>

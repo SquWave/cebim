@@ -4,7 +4,7 @@ import { TrendingUp, TrendingDown, Handshake } from 'lucide-react';
 import { getPeriodRanges, filterTransactionsByDateRange } from '../../utils/dateUtils';
 import { formatCurrency } from '../../utils/formatters';
 
-const CashFlowComparison = ({ transactions = [], dateFilter, customRange }) => {
+const CashFlowComparison = ({ transactions = [], dateFilter, customRange, privacyMode = false }) => {
     const periodData = useMemo(() => {
         const ranges = getPeriodRanges(dateFilter, customRange);
         if (!ranges) return null;
@@ -105,7 +105,7 @@ const CashFlowComparison = ({ transactions = [], dateFilter, customRange }) => {
         if (active && payload && payload.length) {
             const data = payload[0].payload;
             const date = new Date(data.fullDate).toLocaleDateString('tr-TR');
-            const value = formatCurrency(data.net);
+            const value = privacyMode ? '₺***' : formatCurrency(data.net);
 
             return (
                 <div className="bg-slate-800 border border-slate-700 p-3 rounded-xl shadow-lg">
@@ -126,10 +126,10 @@ const CashFlowComparison = ({ transactions = [], dateFilter, customRange }) => {
                         <Handshake className="w-3 h-3" /> Net Durum
                     </div>
                     <div className={`text-lg font-bold ${current.net >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                        {formatCurrency(current.net)}
+                        {privacyMode ? '₺***' : formatCurrency(current.net)}
                     </div>
                     <div className="text-[10px] text-slate-500 mt-1">
-                        Önceki: {formatCurrency(previous.net)}
+                        Önceki: {privacyMode ? '₺***' : formatCurrency(previous.net)}
                     </div>
                 </div>
                 <div className="bg-slate-800 p-4 rounded-xl border border-slate-700">
@@ -137,10 +137,10 @@ const CashFlowComparison = ({ transactions = [], dateFilter, customRange }) => {
                         <TrendingUp className="w-3 h-3 text-emerald-500" /> Toplam Gelir
                     </div>
                     <div className="text-lg font-bold text-white">
-                        {formatCurrency(current.income)}
+                        {privacyMode ? '₺***' : formatCurrency(current.income)}
                     </div>
                     <div className="text-[10px] text-slate-500 mt-1">
-                        Önceki: {formatCurrency(previous.income)}
+                        Önceki: {privacyMode ? '₺***' : formatCurrency(previous.income)}
                     </div>
                 </div>
                 <div className="bg-slate-800 p-4 rounded-xl border border-slate-700">
@@ -148,10 +148,10 @@ const CashFlowComparison = ({ transactions = [], dateFilter, customRange }) => {
                         <TrendingDown className="w-3 h-3 text-rose-500" /> Toplam Gider
                     </div>
                     <div className="text-lg font-bold text-white">
-                        {formatCurrency(current.expense)}
+                        {privacyMode ? '₺***' : formatCurrency(current.expense)}
                     </div>
                     <div className="text-[10px] text-slate-500 mt-1">
-                        Önceki: {formatCurrency(previous.expense)}
+                        Önceki: {privacyMode ? '₺***' : formatCurrency(previous.expense)}
                     </div>
                 </div>
             </div>
@@ -189,7 +189,7 @@ const CashFlowComparison = ({ transactions = [], dateFilter, customRange }) => {
                                     fontSize={12}
                                     tickLine={false}
                                     axisLine={false}
-                                    tickFormatter={(value) => `₺${value}`}
+                                    tickFormatter={(value) => privacyMode ? '***' : `₺${value}`}
                                 />
                                 <Tooltip content={<CustomTooltip />} cursor={{ fill: '#334155', opacity: 0.2 }} />
 

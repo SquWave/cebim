@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Plus, Trash2, ArrowUpCircle, ArrowDownCircle, Wallet as WalletIcon, CreditCard, Building2, ArrowRightLeft, Pencil, X, Check, HandCoins, Home, Utensils, Bus, Car, ShoppingBag, Film, HeartPulse, ChartNoAxesCombined, BanknoteArrowDown, IterationCw, ReceiptText } from 'lucide-react';
 
-const Wallet = ({ transactions = [], onAddTransaction, onUpdateTransaction, onDeleteTransaction, accounts = [], onAddAccount, onUpdateAccount, onDeleteAccount, categories = [] }) => {
+const Wallet = ({ transactions = [], onAddTransaction, onUpdateTransaction, onDeleteTransaction, accounts = [], onAddAccount, onUpdateAccount, onDeleteAccount, categories = [], privacyMode = false }) => {
     // Helper to format date for datetime-local input (YYYY-MM-DDTHH:mm)
     const formatDateForInput = (dateInput) => {
         try {
@@ -135,12 +135,16 @@ const Wallet = ({ transactions = [], onAddTransaction, onUpdateTransaction, onDe
 
     const handleAddTransaction = (e) => {
         e.preventDefault();
-        if (!amount) return;
 
-        // If no account selected, try to use the first one
-        const targetAccountId = selectedAccountId || (accounts.length > 0 ? accounts[0].id : null);
+        // Validate amount
+        const numAmount = Number(amount);
+        if (!amount || numAmount <= 0) {
+            alert("Lütfen 0'dan büyük bir tutar girin.");
+            return;
+        }
 
-        if (!targetAccountId && accounts.length > 0) {
+        // Require account selection
+        if (!selectedAccountId) {
             alert("Lütfen bir hesap seçin.");
             return;
         }
@@ -150,23 +154,24 @@ const Wallet = ({ transactions = [], onAddTransaction, onUpdateTransaction, onDe
             return;
         }
 
-        if (type === 'transfer' && targetAccountId === toAccountId) {
+        if (type === 'transfer' && selectedAccountId === toAccountId) {
             alert("Aynı hesaba transfer yapamazsınız.");
             return;
         }
 
         if (type !== 'transfer' && !category) {
+            alert("Lütfen bir kategori seçin.");
             return;
         }
 
         onAddTransaction({
             id: Date.now(),
-            amount: Number(amount),
+            amount: numAmount,
             description: description || (type === 'transfer' ? 'Transfer' : 'İşlem'),
             category: type === 'transfer' ? 'Transfer' : category,
             type,
             date: new Date(date).toISOString(),
-            accountId: targetAccountId,
+            accountId: selectedAccountId,
             toAccountId: type === 'transfer' ? toAccountId : null
         });
 
@@ -212,7 +217,7 @@ const Wallet = ({ transactions = [], onAddTransaction, onUpdateTransaction, onDe
             <div className="flex justify-between items-center">
                 <div>
                     <h2 className="text-2xl font-bold text-white">Cüzdan</h2>
-                    <div className="text-sm text-slate-400">Toplam Varlık: {new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(totalBalance)}</div>
+                    <div className="text-sm text-slate-400">Toplam Varlık: {privacyMode ? '₺***' : new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(totalBalance)}</div>
                 </div>
                 <div className="flex gap-2">
                     <button
@@ -304,14 +309,18 @@ const Wallet = ({ transactions = [], onAddTransaction, onUpdateTransaction, onDe
                                 <button onClick={() => handleEditAccount(acc)} className="text-slate-600 hover:text-indigo-400 transition-colors">
                                     <Pencil className="w-4 h-4" />
                                 </button>
-                                <button onClick={() => onDeleteAccount(acc.id)} className="text-slate-600 hover:text-rose-500 transition-colors">
+                                <button onClick={() => {
+                                    if (confirm('Bu hesabı silmek istediğinize emin misiniz?')) {
+                                        onDeleteAccount(acc.id);
+                                    }
+                                }} className="text-slate-600 hover:text-rose-500 transition-colors">
                                     <Trash2 className="w-4 h-4" />
                                 </button>
                             </div>
                         </div>
                         <div className="font-medium text-white truncate">{acc.name}</div>
                         <div className="text-lg font-bold text-slate-200">
-                            {new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(accountBalances[acc.id] || 0)}
+                            {privacyMode ? '₺***' : new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(accountBalances[acc.id] || 0)}
                         </div>
                     </div>
                 ))}
@@ -365,7 +374,7 @@ const Wallet = ({ transactions = [], onAddTransaction, onUpdateTransaction, onDe
                                 )}
                             </div>
                         )}
-                        <input type="number" placeholder="Tutar (TL)" value={amount} onChange={(e) => setAmount(e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500" required />
+                        <input type="number" min="0.01" step="0.01" placeholder="Tutar (TL)" value={amount} onChange={(e) => setAmount(e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500" required />
                         <input
                             type="datetime-local"
                             value={date}
@@ -536,13 +545,17 @@ const Wallet = ({ transactions = [], onAddTransaction, onUpdateTransaction, onDe
                                 </div>
                                 <div className="flex items-center gap-3 ml-2 shrink-0">
                                     <span className={`font-semibold whitespace-nowrap ${t.type === 'income' ? 'text-emerald-400' : t.type === 'transfer' ? 'text-blue-400' : 'text-rose-400'}`}>
-                                        {t.type === 'income' ? '+' : t.type === 'transfer' ? '' : '-'}{new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(t.amount)}
+                                        {t.type === 'income' ? '+' : t.type === 'transfer' ? '' : '-'}{privacyMode ? '₺***' : new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(t.amount)}
                                     </span>
                                     <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                         <button onClick={() => handleEditTransaction(t)} className="text-slate-600 hover:text-indigo-400 transition-colors">
                                             <Pencil className="w-4 h-4" />
                                         </button>
-                                        <button onClick={() => onDeleteTransaction(t.id)} className="text-slate-600 hover:text-rose-500 transition-colors">
+                                        <button onClick={() => {
+                                            if (confirm('Bu işlemi silmek istediğinize emin misiniz?')) {
+                                                onDeleteTransaction(t.id);
+                                            }
+                                        }} className="text-slate-600 hover:text-rose-500 transition-colors">
                                             <Trash2 className="w-4 h-4" />
                                         </button>
                                     </div>

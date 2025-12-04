@@ -4,7 +4,7 @@ import { ArrowLeft } from 'lucide-react';
 import { getDateRange } from '../../utils/dateUtils';
 import { formatCurrency } from '../../utils/formatters';
 
-const SpendingCharts = ({ transactions = [], categories = [], dateFilter, customRange }) => {
+const SpendingCharts = ({ transactions = [], categories = [], dateFilter, customRange, privacyMode = false }) => {
     const [chartType, setChartType] = useState('pie'); // 'pie', 'bar', 'list'
     const [view, setView] = useState('main'); // 'main', 'sub'
     const [selectedCategory, setSelectedCategory] = useState(null);
@@ -182,7 +182,7 @@ const SpendingCharts = ({ transactions = [], categories = [], dateFilter, custom
                                     {centerLabel}
                                 </div>
                                 <div className="text-lg font-bold text-white">
-                                    {new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: 0 }).format(centerValue)}
+                                    {privacyMode ? '₺***' : new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: 0 }).format(centerValue)}
                                 </div>
                             </div>
                         </div>
@@ -213,11 +213,11 @@ const SpendingCharts = ({ transactions = [], categories = [], dateFilter, custom
                         <BarChart data={dailyData}>
                             <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
                             <XAxis dataKey="date" stroke="#94a3b8" fontSize={10} tickLine={false} axisLine={false} />
-                            <YAxis stroke="#94a3b8" fontSize={10} tickLine={false} axisLine={false} tickFormatter={(value) => new Intl.NumberFormat('tr-TR', { notation: "compact", compactDisplay: "short" }).format(value)} />
+                            <YAxis stroke="#94a3b8" fontSize={10} tickLine={false} axisLine={false} tickFormatter={(value) => privacyMode ? '***' : new Intl.NumberFormat('tr-TR', { notation: "compact", compactDisplay: "short" }).format(value)} />
                             <Tooltip
                                 cursor={{ fill: '#334155', opacity: 0.2 }}
                                 contentStyle={{ backgroundColor: '#1e293b', borderColor: '#334155', borderRadius: '0.75rem', color: '#f8fafc' }}
-                                formatter={(value) => formatCurrency(value)}
+                                formatter={(value) => privacyMode ? '₺***' : formatCurrency(value)}
                             />
                             <Bar dataKey="amount" fill="#6366f1" radius={[4, 4, 0, 0]} />
                         </BarChart>
@@ -234,7 +234,7 @@ const SpendingCharts = ({ transactions = [], categories = [], dateFilter, custom
                             >
                                 <div className="flex justify-between text-sm mb-1">
                                     <span className="text-slate-200 font-medium">{cat.name}</span>
-                                    <span className="text-slate-400">{formatCurrency(cat.value)}</span>
+                                    <span className="text-slate-400">{privacyMode ? '₺***' : formatCurrency(cat.value)}</span>
                                 </div>
                                 <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
                                     <div

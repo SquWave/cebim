@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { ChevronDown, ChevronRight, Wallet } from 'lucide-react';
 import { formatCurrency } from '../../utils/formatters';
 
-const DetailedReport = ({ transactions = [], categories = [] }) => {
+const DetailedReport = ({ transactions = [], categories = [], privacyMode = false }) => {
     const [expandedCategory, setExpandedCategory] = useState(null);
     const [expandedSubcategory, setExpandedSubcategory] = useState(null);
     const [reportType, setReportType] = useState('expense'); // 'expense' | 'income'
@@ -114,7 +114,7 @@ const DetailedReport = ({ transactions = [], categories = [] }) => {
                                     <span className="font-medium text-white">{cat.name}</span>
                                 </div>
                                 <span className="font-semibold text-white">
-                                    {formatCurrency(cat.total)}
+                                    {privacyMode ? '₺***' : formatCurrency(cat.total)}
                                 </span>
                             </button>
 
@@ -132,7 +132,7 @@ const DetailedReport = ({ transactions = [], categories = [] }) => {
                                                     <span className="text-sm text-slate-300">{sub.name}</span>
                                                 </div>
                                                 <span className="text-sm text-slate-300">
-                                                    {formatCurrency(sub.total)}
+                                                    {privacyMode ? '₺***' : formatCurrency(sub.total)}
                                                 </span>
                                             </button>
 
@@ -148,7 +148,7 @@ const DetailedReport = ({ transactions = [], categories = [] }) => {
                                                                 </div>
                                                             </div>
                                                             <span className={`text-xs whitespace-nowrap ml-2 ${reportType === 'income' ? 'text-emerald-400' : 'text-rose-400'}`}>
-                                                                {reportType === 'expense' ? '-' : '+'}{formatCurrency(t.amount)}
+                                                                {privacyMode ? '₺***' : `${reportType === 'expense' ? '-' : '+'}${formatCurrency(t.amount)}`}
                                                             </span>
                                                         </div>
                                                     ))}

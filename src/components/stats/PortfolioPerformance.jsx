@@ -3,17 +3,17 @@ import PortfolioSummary from './PortfolioSummary';
 import AssetAllocationChart from './AssetAllocationChart';
 import AssetPerformanceCards from './AssetPerformanceCards';
 
-const PortfolioPerformance = ({ assets = [], marketData = {} }) => {
+const PortfolioPerformance = ({ assets = [], marketData = {}, privacyMode = false }) => {
     return (
         <div className="space-y-6">
             {/* Summary Cards */}
-            <PortfolioSummary assets={assets} marketData={marketData} />
+            <PortfolioSummary assets={assets} marketData={marketData} privacyMode={privacyMode} />
 
             {/* Asset Allocation Chart */}
-            <AssetAllocationChart assets={assets} marketData={marketData} />
+            <AssetAllocationChart assets={assets} marketData={marketData} privacyMode={privacyMode} />
 
             {/* Asset Performance Cards */}
-            <AssetPerformanceCards assets={assets} marketData={marketData} />
+            <AssetPerformanceCards assets={assets} marketData={marketData} privacyMode={privacyMode} />
         </div>
     );
 };

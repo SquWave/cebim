@@ -2,7 +2,13 @@ import React from 'react';
 import { Wallet, TrendingUp, ArrowUpCircle, ArrowDownCircle } from 'lucide-react';
 import { formatCurrency } from '../utils/formatters';
 
-const Dashboard = ({ transactions, assets, accounts = [], marketData }) => {
+const Dashboard = ({ transactions, assets, accounts = [], marketData, privacyMode = false }) => {
+    // Helper to mask values in privacy mode
+    const displayValue = (value, prefix = '') => {
+        if (privacyMode) return `${prefix}₺***`;
+        return `${prefix}${formatCurrency(value)}`;
+    };
+
     // Calculate Net Worth
     const totalInitialBalance = accounts.reduce((sum, acc) => sum + (Number(acc.initialBalance) || 0), 0);
 
@@ -51,7 +57,7 @@ const Dashboard = ({ transactions, assets, accounts = [], marketData }) => {
             <div className="bg-gradient-to-br from-slate-900 to-slate-800 p-6 rounded-2xl shadow-lg border border-slate-700">
                 <h2 className="text-slate-400 text-sm font-medium mb-1">Toplam Varlık</h2>
                 <div className="text-3xl font-bold text-white">
-                    {formatCurrency(netWorth)}
+                    {displayValue(netWorth)}
                 </div>
                 <div className="flex gap-4 mt-4">
                     <div className="flex items-center gap-2">
@@ -61,7 +67,7 @@ const Dashboard = ({ transactions, assets, accounts = [], marketData }) => {
                         <div>
                             <div className="text-xs text-slate-400">Cüzdan</div>
                             <div className="text-sm font-semibold text-slate-200">
-                                {formatCurrency(totalCash)}
+                                {displayValue(totalCash)}
                             </div>
                         </div>
                     </div>
@@ -72,7 +78,7 @@ const Dashboard = ({ transactions, assets, accounts = [], marketData }) => {
                         <div>
                             <div className="text-xs text-slate-400">Yatırım</div>
                             <div className="text-sm font-semibold text-slate-200">
-                                {formatCurrency(totalPortfolio)}
+                                {displayValue(totalPortfolio)}
                             </div>
                         </div>
                     </div>
@@ -87,7 +93,7 @@ const Dashboard = ({ transactions, assets, accounts = [], marketData }) => {
                         <span className="text-sm text-slate-400">Gelir</span>
                     </div>
                     <div className="text-lg font-bold text-emerald-400">
-                        +{formatCurrency(totalIncome)}
+                        {displayValue(totalIncome, '+')}
                     </div>
                 </div>
                 <div className="bg-slate-900 p-4 rounded-xl border border-slate-800">
@@ -96,7 +102,7 @@ const Dashboard = ({ transactions, assets, accounts = [], marketData }) => {
                         <span className="text-sm text-slate-400">Gider</span>
                     </div>
                     <div className="text-lg font-bold text-rose-400">
-                        -{formatCurrency(totalExpense)}
+                        {displayValue(totalExpense, '-')}
                     </div>
                 </div>
             </div>
@@ -112,7 +118,7 @@ const Dashboard = ({ transactions, assets, accounts = [], marketData }) => {
                     ) : (
                         assets.map((asset) => {
                             let displayAmount = 0;
-                            let displayValue = 0;
+                            let assetValue = 0;
                             let currentPrice = 0;
 
                             // Get live price if available
@@ -125,25 +131,25 @@ const Dashboard = ({ transactions, assets, accounts = [], marketData }) => {
 
                                 // Use live price if available, else fallback
                                 currentPrice = livePrice > 0 ? livePrice : (asset.lots[0]?.price || 0);
-                                displayValue = displayAmount * currentPrice;
+                                assetValue = displayAmount * currentPrice;
                             } else {
                                 displayAmount = Number(asset.amount);
                                 currentPrice = livePrice > 0 ? livePrice : (Number(asset.price) || 0);
-                                displayValue = displayAmount * currentPrice;
+                                assetValue = displayAmount * currentPrice;
                             }
 
                             return (
                                 <div key={asset.id} className="flex items-center justify-between p-4 bg-slate-900 rounded-xl border border-slate-800">
                                     <div>
                                         <div className="font-medium text-white">{asset.name}</div>
-                                        <div className="text-xs text-slate-400">{displayAmount} Adet</div>
+                                        <div className="text-xs text-slate-400">{privacyMode ? '*** Adet' : `${displayAmount} Adet`}</div>
                                     </div>
                                     <div className="text-right">
                                         <div className="font-semibold text-slate-200">
-                                            {formatCurrency(displayValue)}
+                                            {displayValue(assetValue)}
                                         </div>
                                         <div className="text-xs text-slate-500">
-                                            {formatCurrency(currentPrice)} / adet
+                                            {displayValue(currentPrice)} / adet
                                         </div>
                                     </div>
                                 </div>
