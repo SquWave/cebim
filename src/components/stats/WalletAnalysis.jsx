@@ -38,6 +38,31 @@ const WalletAnalysis = ({ transactions = [], categories = [], accounts = [] }) =
                 start.setHours(0, 0, 0, 0);
                 end.setHours(23, 59, 59, 999);
                 break;
+            case '7days':
+                start.setDate(now.getDate() - 7);
+                start.setHours(0, 0, 0, 0);
+                end = now;
+                break;
+            case '30days':
+                start.setDate(now.getDate() - 30);
+                start.setHours(0, 0, 0, 0);
+                end = now;
+                break;
+            case '3months':
+                start.setMonth(now.getMonth() - 3);
+                start.setHours(0, 0, 0, 0);
+                end = now;
+                break;
+            case '6months':
+                start.setMonth(now.getMonth() - 6);
+                start.setHours(0, 0, 0, 0);
+                end = now;
+                break;
+            case '1year':
+                start.setFullYear(now.getFullYear() - 1);
+                start.setHours(0, 0, 0, 0);
+                end = now;
+                break;
             case 'custom':
                 if (customRange.start) start = new Date(customRange.start);
                 if (customRange.end) end = new Date(customRange.end);
@@ -98,7 +123,7 @@ const WalletAnalysis = ({ transactions = [], categories = [], accounts = [] }) =
                 <TrendChart transactions={filteredTransactions} currentBalance={currentBalance} />
 
                 {/* Spending Distribution */}
-                <SpendingCharts transactions={filteredTransactions} categories={categories} />
+                <SpendingCharts transactions={filteredTransactions} categories={categories} dateFilter={dateFilter} customRange={customRange} />
 
                 {/* Cash Flow Comparison */}
                 <CashFlowComparison transactions={transactions} dateFilter={dateFilter} customRange={customRange} />

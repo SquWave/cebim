@@ -1,7 +1,7 @@
 import React from 'react';
 import { Wallet, TrendingUp, ArrowUpCircle, ArrowDownCircle } from 'lucide-react';
 
-const Dashboard = ({ transactions, assets, accounts = [] }) => {
+const Dashboard = ({ transactions, assets, accounts = [], marketData }) => {
     // Calculate Net Worth
     const totalInitialBalance = accounts.reduce((sum, acc) => sum + (Number(acc.initialBalance) || 0), 0);
 
@@ -12,21 +12,24 @@ const Dashboard = ({ transactions, assets, accounts = [] }) => {
     }, totalInitialBalance);
 
     const totalPortfolio = assets.reduce((acc, curr) => {
+        // Get live price if available, otherwise fallback to stored price
+        const livePrice = marketData?.getPrice ? marketData.getPrice(curr) : 0;
+
         // Support both old flat structure and new lot structure
         if (curr.lots) {
             // Lot-based: sum all lots' values minus sales
-            const totalPurchasedValue = curr.lots.reduce((sum, lot) => {
-                return sum + (Number(lot.amount) * Number(lot.price));
-            }, 0);
-
-            const currentPrice = curr.lots[0]?.price || 0;
+            const totalPurchasedAmount = curr.lots.reduce((sum, lot) => sum + Number(lot.amount), 0);
             const totalSoldAmount = (curr.sales || []).reduce((sum, sale) => sum + Number(sale.amount), 0);
-            const soldValue = totalSoldAmount * currentPrice;
+            const currentAmount = totalPurchasedAmount - totalSoldAmount;
 
-            return acc + (totalPurchasedValue - soldValue);
+            // Use live price if available, else use the price from the first lot (as proxy for stored price)
+            const priceToUse = livePrice > 0 ? livePrice : (curr.lots[0]?.price || 0);
+
+            return acc + (currentAmount * priceToUse);
         } else {
             // Legacy flat structure
-            return acc + (Number(curr.amount) * Number(curr.price));
+            const priceToUse = livePrice > 0 ? livePrice : (Number(curr.price) || 0);
+            return acc + (Number(curr.amount) * priceToUse);
         }
     }, 0);
 
@@ -111,15 +114,20 @@ const Dashboard = ({ transactions, assets, accounts = [] }) => {
                             let displayValue = 0;
                             let currentPrice = 0;
 
+                            // Get live price if available
+                            const livePrice = marketData?.getPrice ? marketData.getPrice(asset) : 0;
+
                             if (asset.lots) {
                                 const totalPurchased = asset.lots.reduce((sum, lot) => sum + Number(lot.amount), 0);
                                 const totalSold = (asset.sales || []).reduce((sum, sale) => sum + Number(sale.amount), 0);
                                 displayAmount = totalPurchased - totalSold;
-                                currentPrice = asset.lots[0]?.price || 0;
+
+                                // Use live price if available, else fallback
+                                currentPrice = livePrice > 0 ? livePrice : (asset.lots[0]?.price || 0);
                                 displayValue = displayAmount * currentPrice;
                             } else {
                                 displayAmount = Number(asset.amount);
-                                currentPrice = Number(asset.price);
+                                currentPrice = livePrice > 0 ? livePrice : (Number(asset.price) || 0);
                                 displayValue = displayAmount * currentPrice;
                             }
 

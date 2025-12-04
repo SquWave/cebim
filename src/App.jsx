@@ -40,7 +40,7 @@ const AuthenticatedApp = () => {
   const renderContent = () => {
     switch (activeTab) {
       case 'dashboard':
-        return <Dashboard transactions={transactions} assets={assets} accounts={accounts} />;
+        return <Dashboard transactions={transactions} assets={assets} accounts={accounts} marketData={marketData} />;
       case 'wallet':
         return <WalletComponent
           transactions={transactions}
@@ -60,7 +60,7 @@ const AuthenticatedApp = () => {
       case 'statistics':
         return <Statistics transactions={transactions} accounts={accounts} categories={categories} assets={assets} marketData={marketData} />;
       default:
-        return <Dashboard transactions={transactions} assets={assets} />;
+        return <Dashboard transactions={transactions} assets={assets} marketData={marketData} />;
     }
   };
 

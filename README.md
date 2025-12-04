@@ -26,9 +26,12 @@
     *   **Gerçek Maliyet:** Ortalama maliyet ve kâr/zarar durumunuz, tüm alım satım geçmişiniz baz alınarak kuruşu kuruşuna hesaplanır.
     *   **Varlık Dağılımı:** Portföyünüzün hangi varlıklardan oluştuğunu yüzdelik dilimlerle pasta grafiğinde görün.
     *   **Performans Kartları:** Her varlığın ve ana kategorinin (Altın, Hisse vb.) toplam getirisini anlık takip edin.
-*   **Gelişmiş Grafikler:**
+*   **Gelişmiş Grafikler ve Analiz:**
     *   **İnteraktif Pasta Grafik:** Harcamalarınızı kategorilere göre inceleyin. Dilimlere tıklayarak alt kategorilere (örn: Gıda > Market) inin ve detaylı analiz yapın.
-    *   **Trend Analizi:** Varlıklarınızın zaman içindeki değişimini grafik üzerinde izleyin.
+    *   **Akıllı Tarih Filtreleri:** "Tarih filtreleri ile harcamalarınızı esnek bir şekilde analiz edin.
+    *   **Harcama Dağılımı:** Günlük harcamalarınızı sütun grafiğinde tam zaman çizelgesiyle görüntüleyin.
+    *   **Nakit Akışı Eğilimi:** Gelir, gider ve net durumunuzu karşılaştırmalı olarak izleyin. "Monotone" trend çizgisi ile nakit akışınızın yönünü pürüzsüz bir eğriyle takip edin.
+    *   **Detaylı Rapor:** Gelir ve giderlerinizi tek bir tıkla değiştirerek ayrı ayrı raporlayın. Kategorilere göre detaylı döküm alın.
 *   **PWA Desteği:** Mobil cihazınıza uygulama olarak kurabilir ve tam ekran deneyimiyle kullanabilirsiniz.
 *   **Karanlık Mod:** Göz yormayan, modern ve şık tasarım.
 

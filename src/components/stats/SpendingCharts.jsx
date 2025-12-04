@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { ArrowLeft } from 'lucide-react';
 
-const SpendingCharts = ({ transactions = [], categories = [] }) => {
+const SpendingCharts = ({ transactions = [], categories = [], dateFilter, customRange }) => {
     const [chartType, setChartType] = useState('pie'); // 'pie', 'bar', 'list'
     const [view, setView] = useState('main'); // 'main', 'sub'
     const [selectedCategory, setSelectedCategory] = useState(null);
@@ -52,11 +52,94 @@ const SpendingCharts = ({ transactions = [], categories = [] }) => {
     }, [expenseTransactions, categories, selectedCategory]);
 
     const dailyData = useMemo(() => {
+        // Helper to get date range
+        const getRange = () => {
+            const now = new Date();
+            let start = new Date();
+            let end = new Date();
+
+            switch (dateFilter) {
+                case 'today':
+                    start.setHours(0, 0, 0, 0);
+                    end.setHours(23, 59, 59, 999);
+                    break;
+                case 'week':
+                    const day = now.getDay() || 7;
+                    if (day !== 1) start.setHours(-24 * (day - 1));
+                    start.setHours(0, 0, 0, 0);
+                    end.setHours(23, 59, 59, 999);
+                    break;
+                case 'month':
+                    start.setDate(1);
+                    start.setHours(0, 0, 0, 0);
+                    end.setHours(23, 59, 59, 999);
+                    break;
+                case 'year':
+                    start.setMonth(0, 1);
+                    start.setHours(0, 0, 0, 0);
+                    end.setHours(23, 59, 59, 999);
+                    break;
+                case '7days':
+                    start.setDate(now.getDate() - 7);
+                    start.setHours(0, 0, 0, 0);
+                    end = now;
+                    break;
+                case '30days':
+                    start.setDate(now.getDate() - 30);
+                    start.setHours(0, 0, 0, 0);
+                    end = now;
+                    break;
+                case '3months':
+                    start.setMonth(now.getMonth() - 3);
+                    start.setHours(0, 0, 0, 0);
+                    end = now;
+                    break;
+                case '6months':
+                    start.setMonth(now.getMonth() - 6);
+                    start.setHours(0, 0, 0, 0);
+                    end = now;
+                    break;
+                case '1year':
+                    start.setFullYear(now.getFullYear() - 1);
+                    start.setHours(0, 0, 0, 0);
+                    end = now;
+                    break;
+                case 'custom':
+                    if (customRange.start) start = new Date(customRange.start);
+                    if (customRange.end) end = new Date(customRange.end);
+                    if (customRange.end && customRange.end.length <= 10) end.setHours(23, 59, 59, 999);
+                    break;
+                default:
+                    return null;
+            }
+            return { start, end };
+        };
+
+        const range = getRange();
         const dayMap = {};
+
+        // Initialize all days in range with 0
+        if (range) {
+            let current = new Date(range.start);
+            const end = new Date(range.end);
+
+            // Safety break to prevent infinite loops if dates are invalid
+            let safety = 0;
+            while (current <= end && safety < 1000) {
+                const dateKey = current.toLocaleDateString('tr-TR');
+                dayMap[dateKey] = 0;
+                current.setDate(current.getDate() + 1);
+                safety++;
+            }
+        }
+
+        // Fill with actual data
         expenseTransactions.forEach(t => {
             const date = new Date(t.date).toLocaleDateString('tr-TR');
-            if (!dayMap[date]) dayMap[date] = 0;
-            dayMap[date] += Number(t.amount);
+            // Only add if it falls within our map (which it should if filtered correctly)
+            if (dayMap.hasOwnProperty(date)) {
+                dayMap[date] += Number(t.amount);
+            }
         });
 
         return Object.keys(dayMap)
@@ -66,7 +149,7 @@ const SpendingCharts = ({ transactions = [], categories = [] }) => {
                 const [d2, m2, y2] = b.date.split('.');
                 return new Date(y1, m1 - 1, d1) - new Date(y2, m2 - 1, d2);
             });
-    }, [expenseTransactions]);
+    }, [expenseTransactions, dateFilter, customRange]);
 
     const COLORS = ['#6366f1', '#ec4899', '#10b981', '#f59e0b', '#8b5cf6', '#ef4444', '#06b6d4', '#84cc16'];
 
