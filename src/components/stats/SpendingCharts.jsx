@@ -66,8 +66,10 @@ const SpendingCharts = ({ transactions = [], categories = [], dateFilter, custom
             // Safety break to prevent infinite loops if dates are invalid
             let safety = 0;
             while (current <= end && safety < 1000) {
-                const dateKey = current.toLocaleDateString('tr-TR');
-                dayMap[dateKey] = 0;
+                const day = String(current.getDate()).padStart(2, '0');
+                const month = String(current.getMonth() + 1).padStart(2, '0');
+                const dateKey = `${day}.${month}`;
+                dayMap[dateKey] = { amount: 0, fullDate: new Date(current) };
                 current.setDate(current.getDate() + 1);
                 safety++;
             }
@@ -75,19 +77,24 @@ const SpendingCharts = ({ transactions = [], categories = [], dateFilter, custom
 
         // Fill with actual data
         expenseTransactions.forEach(t => {
-            const date = new Date(t.date).toLocaleDateString('tr-TR');
+            const txDate = new Date(t.date);
+            const day = String(txDate.getDate()).padStart(2, '0');
+            const month = String(txDate.getMonth() + 1).padStart(2, '0');
+            const date = `${day}.${month}`;
             // Only add if it falls within our map (which it should if filtered correctly)
             if (dayMap.hasOwnProperty(date)) {
-                dayMap[date] += Number(t.amount);
+                dayMap[date].amount += Number(t.amount);
             }
         });
 
         return Object.keys(dayMap)
-            .map(date => ({ date, amount: dayMap[date] }))
+            .map(date => ({ date, amount: dayMap[date].amount, fullDate: dayMap[date].fullDate }))
             .sort((a, b) => {
-                const [d1, m1, y1] = a.date.split('.');
-                const [d2, m2, y2] = b.date.split('.');
-                return new Date(y1, m1 - 1, d1) - new Date(y2, m2 - 1, d2);
+                const [d1, m1] = a.date.split('.');
+                const [d2, m2] = b.date.split('.');
+                // Compare month first, then day
+                if (m1 !== m2) return parseInt(m1) - parseInt(m2);
+                return parseInt(d1) - parseInt(d2);
             });
     }, [expenseTransactions, dateFilter, customRange]);
 
@@ -114,6 +121,23 @@ const SpendingCharts = ({ transactions = [], categories = [], dateFilter, custom
 
     const centerLabel = focusedItem ? focusedItem.name : (view === 'main' ? 'Toplam' : selectedCategory?.name);
     const centerValue = focusedItem ? focusedItem.value : totalValue;
+
+    const CustomBarTooltip = ({ active, payload }) => {
+        if (active && payload && payload.length) {
+            const item = payload[0].payload;
+            const date = item.fullDate ? item.fullDate.toLocaleDateString('tr-TR') : item.date;
+            const value = privacyMode ? '₺***' : new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(item.amount);
+
+            return (
+                <div className="bg-slate-800 border border-slate-700 p-3 rounded-xl shadow-lg">
+                    <p className="text-white font-medium text-sm">
+                        {value} - {date}
+                    </p>
+                </div>
+            );
+        }
+        return null;
+    };
 
     if (expenseTransactions.length === 0) {
         return (
@@ -214,11 +238,7 @@ const SpendingCharts = ({ transactions = [], categories = [], dateFilter, custom
                             <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
                             <XAxis dataKey="date" stroke="#94a3b8" fontSize={10} tickLine={false} axisLine={false} />
                             <YAxis stroke="#94a3b8" fontSize={10} tickLine={false} axisLine={false} tickFormatter={(value) => privacyMode ? '***' : new Intl.NumberFormat('tr-TR', { notation: "compact", compactDisplay: "short" }).format(value)} />
-                            <Tooltip
-                                cursor={{ fill: '#334155', opacity: 0.2 }}
-                                contentStyle={{ backgroundColor: '#1e293b', borderColor: '#334155', borderRadius: '0.75rem', color: '#f8fafc' }}
-                                formatter={(value) => privacyMode ? '₺***' : formatCurrency(value)}
-                            />
+                            <Tooltip content={<CustomBarTooltip />} cursor={{ fill: '#334155', opacity: 0.2 }} />
                             <Bar dataKey="amount" fill="#6366f1" radius={[4, 4, 0, 0]} />
                         </BarChart>
                     </ResponsiveContainer>

@@ -51,7 +51,7 @@ const TrendChart = ({ transactions = [], currentBalance = 0, privacyMode = false
             const dayStats = transactionsByDate[dateKey] || { income: 0, expense: 0 };
 
             trendData.push({
-                date: currentDate.toLocaleDateString('tr-TR'),
+                date: `${String(currentDate.getDate()).padStart(2, '0')}.${String(currentDate.getMonth() + 1).padStart(2, '0')}`,
                 rawDate: new Date(currentDate),
                 balance: runningBalance
             });
@@ -80,6 +80,23 @@ const TrendChart = ({ transactions = [], currentBalance = 0, privacyMode = false
         if (data.length === 0 || data[0].balance === 0) return 0;
         return ((totalChange / Math.abs(data[0].balance)) * 100).toFixed(1);
     }, [data, totalChange]);
+
+    const CustomTooltip = ({ active, payload }) => {
+        if (active && payload && payload.length) {
+            const item = payload[0].payload;
+            const date = item.rawDate.toLocaleDateString('tr-TR');
+            const value = privacyMode ? '₺***' : new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(item.balance);
+
+            return (
+                <div className="bg-slate-800 border border-slate-700 p-3 rounded-xl shadow-lg">
+                    <p className="text-white font-medium text-sm">
+                        {value} - {date}
+                    </p>
+                </div>
+            );
+        }
+        return null;
+    };
 
     if (data.length === 0) {
         return (
@@ -130,12 +147,7 @@ const TrendChart = ({ transactions = [], currentBalance = 0, privacyMode = false
                             axisLine={false}
                             tickFormatter={(value) => privacyMode ? '***' : new Intl.NumberFormat('tr-TR', { notation: "compact", compactDisplay: "short" }).format(value)}
                         />
-                        <Tooltip
-                            contentStyle={{ backgroundColor: '#1e293b', borderColor: '#334155', borderRadius: '0.75rem', color: '#f8fafc' }}
-                            itemStyle={{ color: '#818cf8' }}
-                            formatter={(value) => privacyMode ? '₺***' : new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(value)}
-                            labelStyle={{ color: '#94a3b8', marginBottom: '0.5rem' }}
-                        />
+                        <Tooltip content={<CustomTooltip />} cursor={{ stroke: '#475569' }} />
                         <Area
                             type="monotone"
                             dataKey="balance"

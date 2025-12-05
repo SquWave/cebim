@@ -189,7 +189,7 @@ const CashFlowComparison = ({ transactions = [], dateFilter, customRange, privac
                                     fontSize={12}
                                     tickLine={false}
                                     axisLine={false}
-                                    tickFormatter={(value) => privacyMode ? '***' : `₺${value}`}
+                                    tickFormatter={(value) => privacyMode ? '***' : `${value}`}
                                 />
                                 <Tooltip content={<CustomTooltip />} cursor={{ fill: '#334155', opacity: 0.2 }} />
 
