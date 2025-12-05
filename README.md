@@ -2,7 +2,7 @@
 
 **Cebim**, kişisel finans ve yatırım takibini tek bir yerde birleştiren, gizlilik odaklı ve kullanıcı dostu bir web uygulamasıdır.
 
-<img width="1919" height="978" alt="Cebim-Screenshot" src="https://github.com/user-attachments/assets/eeb7ad4f-4471-4706-a078-ca29f5f561f2" />
+<img width="1920" height="1200" alt="Screenshot_1" src="https://github.com/user-attachments/assets/245acfc4-dc63-474b-a733-fda9956ab5bb" />
 
 ## 🌟 Özellikler
 
