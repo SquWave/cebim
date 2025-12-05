@@ -69,7 +69,7 @@ const AuthenticatedApp = () => {
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 font-sans pb-20">
       {/* Header */}
-      <header className="fixed top-0 left-0 right-0 bg-slate-950/80 backdrop-blur-lg border-b border-slate-800 z-10">
+      <header className="fixed top-0 left-0 right-0 bg-slate-950/95 backdrop-blur-xl border-b border-slate-800 z-50">
         <div className="max-w-md mx-auto px-4 h-16 flex items-center justify-between">
           <h1 className="text-xl font-bold bg-gradient-to-r from-indigo-400 to-emerald-400 bg-clip-text text-transparent">
             Cebim
@@ -98,7 +98,7 @@ const AuthenticatedApp = () => {
       </main>
 
       {/* Bottom Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-slate-950/90 backdrop-blur-lg border-t border-slate-800 z-10 pb-safe">
+      <nav className="fixed bottom-0 left-0 right-0 bg-slate-950/95 backdrop-blur-xl border-t border-slate-800 z-50 pb-safe">
         <div className="max-w-md mx-auto flex justify-around items-center h-16">
           <button
             onClick={() => setActiveTab('dashboard')}

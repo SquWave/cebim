@@ -7,7 +7,7 @@ import DetailedReport from './DetailedReport';
 import { getDateRange, filterTransactionsByDateRange } from '../../utils/dateUtils';
 
 const WalletAnalysis = ({ transactions = [], categories = [], accounts = [], privacyMode = false }) => {
-    const [dateFilter, setDateFilter] = useState('month');
+    const [dateFilter, setDateFilter] = useState('30days');
     const [customRange, setCustomRange] = useState({ start: '', end: '' });
 
     // Filter Transactions based on Date (using shared utility)
