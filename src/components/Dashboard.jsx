@@ -1,5 +1,5 @@
 import React from 'react';
-import { Wallet, TrendingUp, ArrowUpCircle, ArrowDownCircle } from 'lucide-react';
+import { Wallet, PieChart, ArrowUpCircle, ArrowDownCircle } from 'lucide-react';
 import { formatCurrency } from '../utils/formatters';
 
 const Dashboard = ({ transactions, assets, accounts = [], marketData, privacyMode = false }) => {
@@ -73,7 +73,7 @@ const Dashboard = ({ transactions, assets, accounts = [], marketData, privacyMod
                     </div>
                     <div className="flex items-center gap-2">
                         <div className="p-1.5 bg-emerald-500/20 rounded-lg">
-                            <TrendingUp className="w-4 h-4 text-emerald-400" />
+                            <PieChart className="w-4 h-4 text-emerald-400" />
                         </div>
                         <div>
                             <div className="text-xs text-slate-400">Yatırım</div>
