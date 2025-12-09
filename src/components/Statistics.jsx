@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { PieChart, Wallet } from 'lucide-react';
 import WalletAnalysis from './stats/WalletAnalysis';
-import PortfolioPerformance from './stats/PortfolioPerformance';
+import PortfolioSummary from './stats/PortfolioSummary';
+import AssetAllocationChart from './stats/AssetAllocationChart';
+import AssetPerformanceCards from './stats/AssetPerformanceCards';
 
 const Statistics = ({ transactions = [], accounts = [], categories = [], assets = [], marketData = {}, privacyMode = false }) => {
     const [activeTab, setActiveTab] = useState('wallet'); // 'wallet' or 'portfolio'
@@ -36,7 +38,11 @@ const Statistics = ({ transactions = [], accounts = [], categories = [], assets 
                 {activeTab === 'wallet' ? (
                     <WalletAnalysis transactions={transactions} categories={categories} accounts={accounts} privacyMode={privacyMode} />
                 ) : (
-                    <PortfolioPerformance assets={assets} marketData={marketData} privacyMode={privacyMode} />
+                    <div className="space-y-6">
+                        <PortfolioSummary assets={assets} marketData={marketData} privacyMode={privacyMode} />
+                        <AssetAllocationChart assets={assets} marketData={marketData} privacyMode={privacyMode} />
+                        <AssetPerformanceCards assets={assets} marketData={marketData} privacyMode={privacyMode} />
+                    </div>
                 )}
             </div>
         </div>
@@ -44,3 +50,4 @@ const Statistics = ({ transactions = [], accounts = [], categories = [], assets 
 };
 
 export default Statistics;
+

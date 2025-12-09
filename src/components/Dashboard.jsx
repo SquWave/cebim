@@ -1,8 +1,29 @@
-import React from 'react';
-import { Wallet, PieChart, ArrowUpCircle, ArrowDownCircle } from 'lucide-react';
+import React, { useState } from 'react';
+import { Wallet, PieChart, LayoutGrid } from 'lucide-react';
 import { formatCurrency } from '../utils/formatters';
+import { useWidgetPreferences } from '../hooks/useWidgetPreferences';
+import WidgetSelector from './dashboard/WidgetSelector';
 
-const Dashboard = ({ transactions, assets, accounts = [], marketData, privacyMode = false }) => {
+// Widget Components
+import MarketRatesWidget from './dashboard/widgets/MarketRatesWidget';
+import BalanceTrendWidget from './dashboard/widgets/BalanceTrendWidget';
+import CashFlowWidget from './dashboard/widgets/CashFlowWidget';
+import SpendingDistributionWidget from './dashboard/widgets/SpendingDistributionWidget';
+import AssetAllocationWidget from './dashboard/widgets/AssetAllocationWidget';
+import QuickTransactionWidget from './dashboard/widgets/QuickTransactionWidget';
+
+const Dashboard = ({
+    transactions,
+    assets,
+    accounts = [],
+    categories = [],
+    marketData,
+    onAddTransaction,
+    privacyMode = false
+}) => {
+    const [showWidgetSelector, setShowWidgetSelector] = useState(false);
+    const { enabledWidgets, loading: widgetsLoading, toggleWidget, setWidgets } = useWidgetPreferences();
+
     // Helper to mask values in privacy mode
     const displayValue = (value, prefix = '') => {
         if (privacyMode) return `${prefix}₺***`;
@@ -15,26 +36,19 @@ const Dashboard = ({ transactions, assets, accounts = [], marketData, privacyMod
     const totalCash = transactions.reduce((acc, curr) => {
         if (curr.type === 'income') return acc + Number(curr.amount);
         if (curr.type === 'expense') return acc - Number(curr.amount);
-        return acc; // Transfers don't affect total net cash
+        return acc;
     }, totalInitialBalance);
 
     const totalPortfolio = assets.reduce((acc, curr) => {
-        // Get live price if available, otherwise fallback to stored price
         const livePrice = marketData?.getPrice ? marketData.getPrice(curr) : 0;
 
-        // Support both old flat structure and new lot structure
         if (curr.lots) {
-            // Lot-based: sum all lots' values minus sales
             const totalPurchasedAmount = curr.lots.reduce((sum, lot) => sum + Number(lot.amount), 0);
             const totalSoldAmount = (curr.sales || []).reduce((sum, sale) => sum + Number(sale.amount), 0);
             const currentAmount = totalPurchasedAmount - totalSoldAmount;
-
-            // Use live price if available, else use the price from the first lot (as proxy for stored price)
             const priceToUse = livePrice > 0 ? livePrice : (curr.lots[0]?.price || 0);
-
             return acc + (currentAmount * priceToUse);
         } else {
-            // Legacy flat structure
             const priceToUse = livePrice > 0 ? livePrice : (Number(curr.price) || 0);
             return acc + (Number(curr.amount) * priceToUse);
         }
@@ -42,14 +56,32 @@ const Dashboard = ({ transactions, assets, accounts = [], marketData, privacyMod
 
     const netWorth = totalCash + totalPortfolio;
 
-    // Calculate Monthly Summary (Simple version: all time for now, can filter by month later)
-    const totalIncome = transactions
-        .filter(t => t.type === 'income')
-        .reduce((acc, curr) => acc + Number(curr.amount), 0);
+    // Get market rates for widget
+    const rates = marketData ? {
+        USD: marketData.USD,
+        EUR: marketData.EUR,
+        GOLD: marketData.GOLD
+    } : null;
 
-    const totalExpense = transactions
-        .filter(t => t.type === 'expense')
-        .reduce((acc, curr) => acc + Number(curr.amount), 0);
+    // Render a widget by ID
+    const renderWidget = (widgetId) => {
+        switch (widgetId) {
+            case 'market_rates':
+                return <MarketRatesWidget key={widgetId} rates={rates} />;
+            case 'balance_trend':
+                return <BalanceTrendWidget key={widgetId} transactions={transactions} currentBalance={totalCash} privacyMode={privacyMode} />;
+            case 'cash_flow':
+                return <CashFlowWidget key={widgetId} transactions={transactions} privacyMode={privacyMode} />;
+            case 'spending_distribution':
+                return <SpendingDistributionWidget key={widgetId} transactions={transactions} categories={categories} privacyMode={privacyMode} />;
+            case 'asset_allocation':
+                return <AssetAllocationWidget key={widgetId} assets={assets} marketData={marketData} privacyMode={privacyMode} />;
+            case 'quick_transaction':
+                return <QuickTransactionWidget key={widgetId} transactions={transactions} accounts={accounts} categories={categories} onAddTransaction={onAddTransaction} privacyMode={privacyMode} />;
+            default:
+                return null;
+        }
+    };
 
     return (
         <div className="space-y-6 pb-20">
@@ -85,79 +117,35 @@ const Dashboard = ({ transactions, assets, accounts = [], marketData, privacyMod
                 </div>
             </div>
 
-            {/* Monthly Summary */}
-            <div className="grid grid-cols-2 gap-4">
-                <div className="bg-slate-900 p-4 rounded-xl border border-slate-800">
-                    <div className="flex items-center gap-2 mb-2">
-                        <ArrowUpCircle className="w-5 h-5 text-emerald-500" />
-                        <span className="text-sm text-slate-400">Gelir</span>
+            {/* Widget Section */}
+            <div className="space-y-4">
+                {/* Add Widget Button */}
+                <button
+                    onClick={() => setShowWidgetSelector(true)}
+                    className="w-full py-3 px-4 bg-slate-900 hover:bg-slate-800 border border-dashed border-slate-700 rounded-xl text-slate-400 hover:text-white transition-colors flex items-center justify-center gap-2"
+                >
+                    <LayoutGrid className="w-4 h-4" />
+                    <span className="text-sm">Widget Ekle / Düzenle</span>
+                </button>
+
+                {/* Enabled Widgets */}
+                {widgetsLoading ? (
+                    <div className="text-center text-slate-500 py-4">
+                        Widget'lar yükleniyor...
                     </div>
-                    <div className="text-lg font-bold text-emerald-400">
-                        {displayValue(totalIncome, '+')}
-                    </div>
-                </div>
-                <div className="bg-slate-900 p-4 rounded-xl border border-slate-800">
-                    <div className="flex items-center gap-2 mb-2">
-                        <ArrowDownCircle className="w-5 h-5 text-rose-500" />
-                        <span className="text-sm text-slate-400">Gider</span>
-                    </div>
-                    <div className="text-lg font-bold text-rose-400">
-                        {displayValue(totalExpense, '-')}
-                    </div>
-                </div>
+                ) : (
+                    enabledWidgets.map(widgetId => renderWidget(widgetId))
+                )}
             </div>
 
-            {/* Asset Allocation (Simple List) */}
-            <div>
-                <h3 className="text-lg font-semibold text-white mb-4">Varlık Dağılımı</h3>
-                <div className="space-y-3">
-                    {assets.length === 0 ? (
-                        <div className="text-slate-500 text-center py-4 bg-slate-900/50 rounded-xl border border-slate-800 border-dashed">
-                            Henüz varlık eklenmedi.
-                        </div>
-                    ) : (
-                        assets.map((asset) => {
-                            let displayAmount = 0;
-                            let assetValue = 0;
-                            let currentPrice = 0;
-
-                            // Get live price if available
-                            const livePrice = marketData?.getPrice ? marketData.getPrice(asset) : 0;
-
-                            if (asset.lots) {
-                                const totalPurchased = asset.lots.reduce((sum, lot) => sum + Number(lot.amount), 0);
-                                const totalSold = (asset.sales || []).reduce((sum, sale) => sum + Number(sale.amount), 0);
-                                displayAmount = totalPurchased - totalSold;
-
-                                // Use live price if available, else fallback
-                                currentPrice = livePrice > 0 ? livePrice : (asset.lots[0]?.price || 0);
-                                assetValue = displayAmount * currentPrice;
-                            } else {
-                                displayAmount = Number(asset.amount);
-                                currentPrice = livePrice > 0 ? livePrice : (Number(asset.price) || 0);
-                                assetValue = displayAmount * currentPrice;
-                            }
-
-                            return (
-                                <div key={asset.id} className="flex items-center justify-between p-4 bg-slate-900 rounded-xl border border-slate-800">
-                                    <div>
-                                        <div className="font-medium text-white">{asset.name}</div>
-                                        <div className="text-xs text-slate-400">{privacyMode ? '*** Adet' : `${displayAmount} Adet`}</div>
-                                    </div>
-                                    <div className="text-right">
-                                        <div className="font-semibold text-slate-200">
-                                            {displayValue(assetValue)}
-                                        </div>
-                                        <div className="text-xs text-slate-500">
-                                            {displayValue(currentPrice)} / adet
-                                        </div>
-                                    </div>
-                                </div>
-                            );
-                        })
-                    )}
-                </div>
-            </div>
+            {/* Widget Selector Modal */}
+            <WidgetSelector
+                isOpen={showWidgetSelector}
+                onClose={() => setShowWidgetSelector(false)}
+                enabledWidgets={enabledWidgets}
+                onToggleWidget={toggleWidget}
+                onReorderWidgets={setWidgets}
+            />
         </div>
     );
 };

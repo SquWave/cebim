@@ -1,18 +1,8 @@
 import React, { useState, useMemo } from 'react';
 import { Plus, Trash2, ArrowUpCircle, ArrowDownCircle, Wallet as WalletIcon, CreditCard, Building2, ArrowRightLeft, Pencil, X, Check, HandCoins, Home, Utensils, Bus, Car, ShoppingBag, Film, HeartPulse, ChartNoAxesCombined, BanknoteArrowDown, IterationCw, ReceiptText } from 'lucide-react';
+import { formatDateForInput } from '../utils/formatters';
 
 const Wallet = ({ transactions = [], onAddTransaction, onUpdateTransaction, onDeleteTransaction, accounts = [], onAddAccount, onUpdateAccount, onDeleteAccount, categories = [], privacyMode = false }) => {
-    // Helper to format date for datetime-local input (YYYY-MM-DDTHH:mm)
-    const formatDateForInput = (dateInput) => {
-        try {
-            const date = dateInput ? new Date(dateInput) : new Date();
-            if (isNaN(date.getTime())) return new Date().toISOString().slice(0, 16);
-            const pad = (num) => num.toString().padStart(2, '0');
-            return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
-        } catch (e) {
-            return new Date().toISOString().slice(0, 16);
-        }
-    };
 
     // Transaction State
     const [isAdding, setIsAdding] = useState(false);
@@ -379,7 +369,7 @@ const Wallet = ({ transactions = [], onAddTransaction, onUpdateTransaction, onDe
                             type="datetime-local"
                             value={date}
                             onChange={(e) => setDate(e.target.value)}
-                            className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+                            className="w-full min-w-0 max-w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
                             required
                         />
                         <input type="text" placeholder="Açıklama (Opsiyonel)" value={description} onChange={(e) => setDescription(e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500" />

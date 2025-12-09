@@ -131,13 +131,13 @@ const AssetAllocationChart = ({ assets = [], marketData = {}, privacyMode = fals
                             formatter={(value) => privacyMode ? '₺***' : new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(value)}
                         />
                         <Legend
-                            layout="vertical"
-                            verticalAlign="middle"
-                            align="right"
-                            wrapperStyle={{ fontSize: '12px', color: '#94a3b8' }}
+                            layout="horizontal"
+                            verticalAlign="bottom"
+                            align="center"
+                            wrapperStyle={{ fontSize: '12px', color: '#94a3b8', paddingTop: '16px' }}
                             formatter={(value, entry) => {
                                 const percent = totalValue > 0 ? (entry.payload.value / totalValue) * 100 : 0;
-                                return `${value} (${privacyMode ? '***' : `%${percent.toFixed(1)}`})`;
+                                return `${value} (%${privacyMode ? '***' : percent.toFixed(1)})`;
                             }}
                         />
                     </PieChart>

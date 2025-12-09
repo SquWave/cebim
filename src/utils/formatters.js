@@ -5,9 +5,11 @@
 /**
  * Format a number as Turkish Lira currency
  * @param {number} value - The value to format
+ * @param {boolean} privacyMode - If true, hides the value
  * @returns {string} Formatted currency string (e.g., "₺1.234,56")
  */
-export const formatCurrency = (value) => {
+export const formatCurrency = (value, privacyMode = false) => {
+    if (privacyMode) return '₺***';
     return new Intl.NumberFormat('tr-TR', {
         style: 'currency',
         currency: 'TRY'

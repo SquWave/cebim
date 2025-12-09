@@ -1,92 +1,57 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Plus, TrendingUp, RefreshCw, Trash2, Coins, Banknote, ArrowUpRight, PieChart, ReceiptTurkishLira } from 'lucide-react';
-import { fetchMarketData, searchStocks, TEFAS_FUNDS } from '../services/marketData';
-import { migrateFlatAssetToLots, computeAggregatedValues, formatCurrency } from '../utils/assetHelpers';
+import { fetchMarketData } from '../services/marketData';
+import { migrateFlatAssetToLots, computeAggregatedValues } from '../utils/assetHelpers';
+import { formatCurrency } from '../utils/formatters';
 import MarketRatesTicker from './portfolio/MarketRatesTicker';
 import AssetCategoryList from './portfolio/AssetCategoryList';
+import { usePortfolioForm } from '../hooks/usePortfolioForm';
+import { usePortfolioOperations } from '../hooks/usePortfolioOperations';
 
 
 const Portfolio = ({ assets, onAddAsset, onUpdateAsset, onDeleteAsset, privacyMode = false }) => {
-    const [isAdding, setIsAdding] = useState(false);
-    const [name, setName] = useState('');
-    const [amount, setAmount] = useState('');
-    const [cost, setCost] = useState(''); // Unit Cost (Maliyet)
-    const [type, setType] = useState(''); // stock, fund, gold, currency
+    // Market data state
     const [rates, setRates] = useState(null);
     const [specificPrices, setSpecificPrices] = useState({});
     const [loadingRates, setLoadingRates] = useState(false);
-    const [lastUpdated, setLastUpdated] = useState(null);
-    const [expandedAssets, setExpandedAssets] = useState(new Set());
-    const [editingLot, setEditingLot] = useState(null); // { assetId, lotId }
-    const [editForm, setEditForm] = useState({ amount: '', cost: '' });
 
-    // Sale State
-    const [isSelling, setIsSelling] = useState(null); // assetId being sold
-    const [saleForm, setSaleForm] = useState({ amount: '', salePrice: '' });
-    const [viewMode, setViewMode] = useState({}); // { assetId: 'lots' | 'sales' }
-    const [editingSale, setEditingSale] = useState(null); // { assetId, saleId }
-    const [editSaleForm, setEditSaleForm] = useState({ amount: '', salePrice: '' });
+    // Use custom hooks for form and operations
+    const formHook = usePortfolioForm({ assets, onAddAsset, onUpdateAsset, rates });
+    const opsHook = usePortfolioOperations({ onUpdateAsset, onDeleteAsset });
 
-    // Autocomplete State
-    const [suggestions, setSuggestions] = useState([]);
-    const [showSuggestions, setShowSuggestions] = useState(false);
-    const isSelectionRef = useRef(false);
+    // Destructure form hook values
+    const {
+        isAdding, setIsAdding,
+        name, setName,
+        amount, setAmount,
+        cost, setCost,
+        type, setType,
+        suggestions, showSuggestions, setShowSuggestions,
+        handleSelectSuggestion, handleSubmit
+    } = formHook;
 
+    // Destructure operations hook values
+    const {
+        editingLot, editForm, setEditForm,
+        handleEditLot, handleSaveLot, handleCancelEdit, handleDeleteLot,
+        isSelling, setIsSelling, saleForm, setSaleForm,
+        viewMode, setViewMode,
+        editingSale, editSaleForm, setEditSaleForm,
+        handleSale, handleDeleteSale, handleEditSale, handleCancelEditSale, handleSaveSale,
+        expandedAssets, setExpandedAssets
+    } = opsHook;
+
+    // Load rates on mount
     useEffect(() => {
         loadRates();
     }, []);
 
-    // Reset form when opening add dialog
-    useEffect(() => {
-        if (isAdding) {
-            setName('');
-            setAmount('');
-            setCost('');
-            setType('');
-            setSuggestions([]);
-            setShowSuggestions(false);
-            isSelectionRef.current = false;
-        }
-    }, [isAdding]);
-
     // Auto-update prices when rates are loaded
     useEffect(() => {
         if (rates && assets.length > 0) {
-            updateAssetPrices(true); // Silent update
+            updateAssetPrices(true);
         }
     }, [rates]);
-
-    // Autocomplete Logic
-    useEffect(() => {
-        if (isSelectionRef.current) {
-            isSelectionRef.current = false;
-            return;
-        }
-
-        if (!name || (type !== 'stock' && type !== 'fund')) {
-            setSuggestions([]);
-            return;
-        }
-
-        const query = name.toUpperCase();
-
-        const fetchSuggestions = async () => {
-            if (type === 'stock') {
-                const results = await searchStocks(query);
-                setSuggestions(results);
-                if (results.length > 0) setShowSuggestions(true);
-            } else {
-                const filtered = TEFAS_FUNDS.filter(item =>
-                    item.code.startsWith(query) || item.name.toUpperCase().includes(query)
-                ).slice(0, 5);
-                setSuggestions(filtered);
-                if (filtered.length > 0) setShowSuggestions(true);
-            }
-        };
-
-        const timeoutId = setTimeout(fetchSuggestions, 300); // Debounce
-        return () => clearTimeout(timeoutId);
-    }, [name, type]);
 
     const loadRates = async () => {
         setLoadingRates(true);
@@ -95,7 +60,6 @@ const Portfolio = ({ assets, onAddAsset, onUpdateAsset, onDeleteAsset, privacyMo
         if (data.specificPrices) {
             setSpecificPrices(data.specificPrices);
         }
-        setLastUpdated(new Date());
         setLoadingRates(false);
     };
 
@@ -120,11 +84,9 @@ const Portfolio = ({ assets, onAddAsset, onUpdateAsset, onDeleteAsset, privacyMo
                 newPrice = specificPrices[assetName];
             }
 
-            // Check if current price (from first lot) differs from new price
             const currentPrice = asset.lots[0]?.price || 0;
 
             if (newPrice && newPrice !== currentPrice) {
-                // Update all lots with new price
                 const updatedLots = asset.lots.map(lot => ({
                     ...lot,
                     price: newPrice
@@ -145,306 +107,6 @@ const Portfolio = ({ assets, onAddAsset, onUpdateAsset, onDeleteAsset, privacyMo
             } else {
                 alert('Güncellenebilecek uygun varlık bulunamadı.');
             }
-        }
-    };
-
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        if (!name || !amount || !cost) return;
-
-        // Validate amount and cost
-        const numAmount = Number(amount);
-        const numCost = Number(cost);
-
-        if (numAmount <= 0) {
-            alert("Lütfen 0'dan büyük bir adet girin.");
-            return;
-        }
-
-        if (numCost <= 0) {
-            alert("Lütfen 0'dan büyük bir maliyet girin.");
-            return;
-        }
-
-        let initialPrice = numCost;
-
-        // For currency assets, use live FX rate instead of cost
-        if (type === 'currency' && rates) {
-            if (name === 'USD') initialPrice = rates.USD;
-            else if (name === 'EUR') initialPrice = rates.EUR;
-        }
-        else if (type === 'gold' && rates) {
-            initialPrice = rates.GOLD;
-        }
-        // If it's a stock, try to fetch the current price immediately
-        else if (type === 'stock' && rates && rates.specificPrices) {
-            const stockCode = name.toUpperCase();
-            // Trigger a refresh to get this specific stock's price
-            const data = await fetchMarketData([{ name: stockCode, type: 'stock' }]);
-            if (data.specificPrices && data.specificPrices[stockCode]) {
-                initialPrice = data.specificPrices[stockCode];
-                console.log('[handleSubmit] Fetched live price for stock', stockCode, ':', initialPrice);
-            }
-        }
-        // If it's a fund, fetch the current price from TEFAS
-        else if (type === 'fund') {
-            const fundCode = name.toUpperCase();
-            const data = await fetchMarketData([{ name: fundCode, type: 'fund' }]);
-            if (data.specificPrices && data.specificPrices[fundCode]) {
-                initialPrice = data.specificPrices[fundCode];
-                console.log('[handleSubmit] Fetched live price for fund', fundCode, ':', initialPrice);
-            }
-        }
-
-        try {
-            const assetName = name.toUpperCase();
-
-            // Migrate existing assets on the fly
-            const migratedAssets = assets.map(migrateFlatAssetToLots);
-
-            // Check if asset already exists (by name + type)
-            const existingAsset = migratedAssets.find(a => a.name === assetName && a.type === type);
-
-            if (existingAsset) {
-                // Add new lot to existing asset
-                const newLot = {
-                    id: `lot_${Date.now()}`,
-                    amount: numAmount,
-                    cost: numCost,
-                    price: initialPrice,
-                    addedAt: Date.now()
-                };
-
-                const updatedAsset = {
-                    ...existingAsset,
-                    lots: [...existingAsset.lots, newLot]
-                };
-
-                await onUpdateAsset(updatedAsset);
-            } else {
-                // Create new asset with first lot
-                const newAsset = {
-                    id: Date.now(),
-                    name: assetName,
-                    type,
-                    expanded: false,
-                    lots: [{
-                        id: `lot_${Date.now()}`,
-                        amount: numAmount,
-                        cost: numCost,
-                        price: initialPrice,
-                        addedAt: Date.now()
-                    }]
-                };
-
-                await onAddAsset(newAsset);
-            }
-
-            // Reset form on success
-            setName('');
-            setAmount('');
-            setCost('');
-            setIsAdding(false);
-            setSuggestions([]);
-
-        } catch (error) {
-            console.error("Error adding/updating asset:", error);
-            alert("Varlık eklenirken bir hata oluştu. Lütfen tekrar deneyin.");
-        }
-    };
-
-    const handleSelectSuggestion = (code) => {
-        isSelectionRef.current = true;
-        setName(code);
-        setShowSuggestions(false);
-    };
-
-    const formatCurrency = (value) => {
-        if (privacyMode) return '₺***';
-        return new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(value);
-    };
-
-    const handleEditLot = (assetId, lot) => {
-        setEditingLot({ assetId, lotId: lot.id });
-        setEditForm({ amount: lot.amount, cost: lot.cost });
-    };
-
-    const handleSaveLot = async (asset, lotId) => {
-        const newAmount = Number(editForm.amount);
-        const newCost = Number(editForm.cost);
-
-        if (!newAmount || newAmount <= 0) {
-            alert("Lütfen 0'dan büyük bir adet girin.");
-            return;
-        }
-
-        if (!newCost || newCost <= 0) {
-            alert("Lütfen 0'dan büyük bir maliyet girin.");
-            return;
-        }
-
-        try {
-            const updatedLots = asset.lots.map(lot =>
-                lot.id === lotId
-                    ? { ...lot, amount: newAmount, cost: newCost }
-                    : lot
-            );
-
-            await onUpdateAsset({ ...asset, lots: updatedLots });
-            setEditingLot(null);
-            setEditForm({ amount: '', cost: '' });
-        } catch (error) {
-            console.error("Error updating lot:", error);
-            alert("Kayıt güncellenirken bir hata oluştu.");
-        }
-    };
-
-    const handleCancelEdit = () => {
-        setEditingLot(null);
-        setEditForm({ amount: '', cost: '' });
-    };
-
-    const handleDeleteLot = async (asset, lotId) => {
-        if (!confirm("Bu alım kaydını silmek istediğinize emin misiniz?")) return;
-
-        try {
-            const updatedLots = asset.lots.filter(lot => lot.id !== lotId);
-
-            if (updatedLots.length === 0) {
-                // If no lots left, delete the entire asset
-                await onDeleteAsset(asset.id);
-            } else {
-                // Update asset with remaining lots
-                await onUpdateAsset({ ...asset, lots: updatedLots });
-            }
-        } catch (error) {
-            console.error("Error deleting lot:", error);
-            alert("Kayıt silinirken bir hata oluştu.");
-        }
-    };
-
-    const handleSale = async (asset) => {
-        const { totalAmount, avgCost, currentPrice } = computeAggregatedValues(asset);
-        const saleAmount = Number(saleForm.amount);
-        const salePrice = Number(saleForm.salePrice) || currentPrice;
-
-        // Validation
-        if (!saleAmount || saleAmount <= 0) {
-            alert("Lütfen geçerli bir adet girin.");
-            return;
-        }
-
-        if (saleAmount > totalAmount) {
-            alert(`Yeterli varlık yok! Maksimum ${totalAmount} adet satabilirsiniz.`);
-            return;
-        }
-
-        try {
-            // Create sale record
-            const newSale = {
-                id: `sale_${Date.now()}`,
-                amount: saleAmount,
-                salePrice: salePrice,
-                avgCost: avgCost,
-                profit: (saleAmount * salePrice) - (saleAmount * avgCost),
-                soldAt: Date.now()
-            };
-
-            // Add to sales array
-            const updatedSales = [...(asset.sales || []), newSale];
-
-            // Update asset (keep lots unchanged, just update sales)
-            await onUpdateAsset({
-                ...asset,
-                sales: updatedSales
-            });
-
-            // Reset sale form
-            setIsSelling(null);
-            setSaleForm({ amount: '', salePrice: '' });
-
-        } catch (error) {
-            console.error("Error processing sale:", error);
-            alert("Satış işlemi sırasında bir hata oluştu.");
-        }
-    };
-
-    const handleDeleteSale = async (asset, saleId) => {
-        if (!confirm("Bu satış kaydını silmek istediğinize emin misiniz?")) return;
-
-        try {
-            const updatedSales = (asset.sales || []).filter(s => s.id !== saleId);
-
-            await onUpdateAsset({
-                ...asset,
-                sales: updatedSales
-            });
-        } catch (error) {
-            console.error("Error deleting sale:", error);
-            alert("Satış kaydı silinirken bir hata oluştu.");
-        }
-    };
-
-    const handleEditSale = (assetId, sale) => {
-        setEditingSale({ assetId, saleId: sale.id });
-        setEditSaleForm({
-            amount: sale.amount,
-            salePrice: sale.salePrice
-        });
-    };
-
-    const handleCancelEditSale = () => {
-        setEditingSale(null);
-        setEditSaleForm({ amount: '', salePrice: '' });
-    };
-
-    const handleSaveSale = async (asset, saleId) => {
-        const newAmount = Number(editSaleForm.amount);
-        const newSalePrice = Number(editSaleForm.salePrice);
-
-        if (!newAmount || newAmount <= 0) {
-            alert("Lütfen geçerli bir adet girin.");
-            return;
-        }
-
-        if (!newSalePrice || newSalePrice < 0) {
-            alert("Lütfen geçerli bir satış fiyatı girin.");
-            return;
-        }
-
-        // Validate against total holdings
-        const totalPurchased = asset.lots.reduce((sum, lot) => sum + Number(lot.amount), 0);
-        const otherSalesTotal = asset.sales
-            .filter(s => s.id !== saleId)
-            .reduce((sum, sale) => sum + Number(sale.amount), 0);
-
-        if (newAmount + otherSalesTotal > totalPurchased) {
-            alert(`Yeterli varlık yok! Maksimum ${totalPurchased - otherSalesTotal} adet satabilirsiniz.`);
-            return;
-        }
-
-        try {
-            const updatedSales = asset.sales.map(sale => {
-                if (sale.id === saleId) {
-                    return {
-                        ...sale,
-                        amount: newAmount,
-                        salePrice: newSalePrice,
-                        profit: (newAmount * newSalePrice) - (newAmount * sale.avgCost)
-                    };
-                }
-                return sale;
-            });
-
-            await onUpdateAsset({
-                ...asset,
-                sales: updatedSales
-            });
-
-            handleCancelEditSale();
-        } catch (error) {
-            console.error("Error updating sale:", error);
-            alert("Satış kaydı güncellenirken bir hata oluştu.");
         }
     };
 

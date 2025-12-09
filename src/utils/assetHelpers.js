@@ -57,17 +57,8 @@ export const computeAggregatedValues = (lotsAsset) => {
     return { totalAmount, avgCost, currentPrice, totalValue, totalProfit, profitPercentage };
 };
 
-/**
- * Format currency in Turkish Lira
- */
-export const formatCurrency = (value, privacyMode = false) => {
-    if (privacyMode) return '₺***';
-    return new Intl.NumberFormat('tr-TR', {
-        style: 'currency',
-        currency: 'TRY',
-        minimumFractionDigits: 2
-    }).format(value);
-};
+// Re-export formatCurrency from formatters for backward compatibility
+export { formatCurrency } from './formatters';
 
 /**
  * Category configuration for asset types

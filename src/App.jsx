@@ -41,7 +41,15 @@ const AuthenticatedApp = () => {
   const renderContent = () => {
     switch (activeTab) {
       case 'dashboard':
-        return <Dashboard transactions={transactions} assets={assets} accounts={accounts} marketData={marketData} privacyMode={privacyMode} />;
+        return <Dashboard
+          transactions={transactions}
+          assets={assets}
+          accounts={accounts}
+          categories={categories}
+          marketData={marketData}
+          onAddTransaction={addTransaction}
+          privacyMode={privacyMode}
+        />;
       case 'wallet':
         return <WalletComponent
           transactions={transactions}

@@ -134,7 +134,7 @@ const CashFlowComparison = ({ transactions = [], dateFilter, customRange, privac
                 </div>
                 <div className="bg-slate-800 p-4 rounded-xl border border-slate-700">
                     <div className="flex items-center gap-2 text-slate-400 text-xs font-medium mb-1 whitespace-nowrap">
-                        <TrendingUp className="w-3 h-3 text-emerald-500" /> Toplam Gelir
+                        <TrendingUp className="w-3 h-3 text-emerald-400 flex-shrink-0" /> Toplam Gelir
                     </div>
                     <div className="text-lg font-bold text-white">
                         {privacyMode ? '₺***' : formatCurrency(current.income)}
@@ -145,7 +145,7 @@ const CashFlowComparison = ({ transactions = [], dateFilter, customRange, privac
                 </div>
                 <div className="bg-slate-800 p-4 rounded-xl border border-slate-700">
                     <div className="flex items-center gap-2 text-slate-400 text-xs font-medium mb-1 whitespace-nowrap">
-                        <TrendingDown className="w-3 h-3 text-rose-500" /> Toplam Gider
+                        <TrendingDown className="w-3 h-3 text-rose-400 flex-shrink-0" /> Toplam Gider
                     </div>
                     <div className="text-lg font-bold text-white">
                         {privacyMode ? '₺***' : formatCurrency(current.expense)}
