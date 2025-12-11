@@ -38,7 +38,7 @@ export const safeNumber = (val) => {
  * @returns {string} Formatted date string
  */
 export const formatDateForInput = (dateInput) => {
-    const date = dateInput instanceof Date ? dateInput : new Date(dateInput);
+    const date = dateInput ? (dateInput instanceof Date ? dateInput : new Date(dateInput)) : new Date();
     const pad = (num) => String(num).padStart(2, '0');
 
     const year = date.getFullYear();

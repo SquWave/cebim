@@ -143,13 +143,6 @@ const AssetAllocationChart = ({ assets = [], marketData = {}, privacyMode = fals
                     </PieChart>
                 </ResponsiveContainer>
             </div>
-
-            {/* Click hint for main view */}
-            {view === 'main' && mainData.length > 0 && (
-                <p className="text-xs text-slate-500 text-center mt-4">
-                    Detayları görmek için kategoriye tıklayın
-                </p>
-            )}
         </div>
     );
 };

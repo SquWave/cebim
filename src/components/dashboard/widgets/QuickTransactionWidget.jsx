@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Plus, ArrowUpCircle, ArrowDownCircle, ArrowRightCircle } from 'lucide-react';
-import { formatCurrency } from '../../../utils/formatters';
+import { formatCurrency, formatDateForInput } from '../../../utils/formatters';
 
 /**
  * Quick Transaction Widget
@@ -21,7 +21,7 @@ const QuickTransactionWidget = ({
         category: '',
         accountId: '',
         toAccountId: '',
-        date: new Date().toISOString().slice(0, 16)
+        date: formatDateForInput() // Use local time instead of UTC
     });
 
     // Get last 5 transactions

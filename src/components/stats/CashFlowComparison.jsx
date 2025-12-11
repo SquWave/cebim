@@ -120,38 +120,47 @@ const CashFlowComparison = ({ transactions = [], dateFilter, customRange, privac
 
     return (
         <div className="space-y-4">
-            <div className="grid grid-cols-3 gap-4">
-                <div className="bg-slate-800 p-4 rounded-xl border border-slate-700">
-                    <div className="flex items-center gap-2 text-slate-400 text-xs font-medium mb-1 whitespace-nowrap">
-                        <Handshake className="w-3 h-3" /> Net Durum
+            <div className="space-y-3">
+                <div className="bg-slate-800 p-4 rounded-xl border border-slate-700 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <Handshake className="w-5 h-5 text-slate-400" />
+                        <span className="text-slate-400 text-sm font-medium">Net Durum</span>
                     </div>
-                    <div className={`text-lg font-bold ${current.net >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                        {privacyMode ? '₺***' : formatCurrency(current.net)}
-                    </div>
-                    <div className="text-[10px] text-slate-500 mt-1">
-                        Önceki: {privacyMode ? '₺***' : formatCurrency(previous.net)}
-                    </div>
-                </div>
-                <div className="bg-slate-800 p-4 rounded-xl border border-slate-700">
-                    <div className="flex items-center gap-2 text-slate-400 text-xs font-medium mb-1 whitespace-nowrap">
-                        <TrendingUp className="w-3 h-3 text-emerald-400 flex-shrink-0" /> Toplam Gelir
-                    </div>
-                    <div className="text-lg font-bold text-white">
-                        {privacyMode ? '₺***' : formatCurrency(current.income)}
-                    </div>
-                    <div className="text-[10px] text-slate-500 mt-1">
-                        Önceki: {privacyMode ? '₺***' : formatCurrency(previous.income)}
+                    <div className="text-right">
+                        <div className={`text-lg font-bold ${current.net >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                            {privacyMode ? '₺***' : formatCurrency(current.net)}
+                        </div>
+                        <div className="text-[10px] text-slate-500">
+                            Önceki: {privacyMode ? '₺***' : formatCurrency(previous.net)}
+                        </div>
                     </div>
                 </div>
-                <div className="bg-slate-800 p-4 rounded-xl border border-slate-700">
-                    <div className="flex items-center gap-2 text-slate-400 text-xs font-medium mb-1 whitespace-nowrap">
-                        <TrendingDown className="w-3 h-3 text-rose-400 flex-shrink-0" /> Toplam Gider
+                <div className="bg-slate-800 p-4 rounded-xl border border-slate-700 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <TrendingUp className="w-5 h-5 text-emerald-400" />
+                        <span className="text-slate-400 text-sm font-medium">Toplam Gelir</span>
                     </div>
-                    <div className="text-lg font-bold text-white">
-                        {privacyMode ? '₺***' : formatCurrency(current.expense)}
+                    <div className="text-right">
+                        <div className="text-lg font-bold text-emerald-400">
+                            {privacyMode ? '₺***' : formatCurrency(current.income)}
+                        </div>
+                        <div className="text-[10px] text-slate-500">
+                            Önceki: {privacyMode ? '₺***' : formatCurrency(previous.income)}
+                        </div>
                     </div>
-                    <div className="text-[10px] text-slate-500 mt-1">
-                        Önceki: {privacyMode ? '₺***' : formatCurrency(previous.expense)}
+                </div>
+                <div className="bg-slate-800 p-4 rounded-xl border border-slate-700 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <TrendingDown className="w-5 h-5 text-rose-400" />
+                        <span className="text-slate-400 text-sm font-medium">Toplam Gider</span>
+                    </div>
+                    <div className="text-right">
+                        <div className="text-lg font-bold text-rose-400">
+                            {privacyMode ? '₺***' : formatCurrency(current.expense)}
+                        </div>
+                        <div className="text-[10px] text-slate-500">
+                            Önceki: {privacyMode ? '₺***' : formatCurrency(previous.expense)}
+                        </div>
                     </div>
                 </div>
             </div>

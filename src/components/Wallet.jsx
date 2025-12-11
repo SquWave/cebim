@@ -372,7 +372,7 @@ const Wallet = ({ transactions = [], onAddTransaction, onUpdateTransaction, onDe
                             className="w-full min-w-0 max-w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
                             required
                         />
-                        <input type="text" placeholder="Açıklama (Opsiyonel)" value={description} onChange={(e) => setDescription(e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500" />
+                        <input type="text" placeholder="Açıklama" value={description} onChange={(e) => setDescription(e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500" />
 
                         {type !== 'transfer' && (
                             <div className="relative">
