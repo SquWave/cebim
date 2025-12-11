@@ -172,17 +172,17 @@ const SpendingCharts = ({ transactions = [], categories = [], dateFilter, custom
 
             <div className="h-64 w-full" style={{ minHeight: '256px', minWidth: 0 }}>
                 {chartType === 'pie' && (
-                    <div className="flex h-full">
+                    <div className="flex flex-col h-full">
                         {/* Chart Area */}
-                        <div className="relative flex-1 h-full">
-                            <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={256}>
+                        <div className="relative flex-1 h-48">
+                            <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={180}>
                                 <PieChart>
                                     <Pie
                                         data={activeData}
                                         cx="50%"
                                         cy="50%"
-                                        innerRadius={60}
-                                        outerRadius={80}
+                                        innerRadius={50}
+                                        outerRadius={70}
                                         paddingAngle={5}
                                         dataKey="value"
                                         onClick={handleSliceClick}
@@ -211,19 +211,19 @@ const SpendingCharts = ({ transactions = [], categories = [], dateFilter, custom
                             </div>
                         </div>
 
-                        {/* Custom Legend */}
-                        <div className="w-1/3 flex flex-col justify-center pl-2 space-y-2 overflow-y-auto custom-scrollbar">
+                        {/* Custom Legend - Bottom Horizontal */}
+                        <div className="flex flex-wrap justify-center gap-x-4 gap-y-2 pt-4 border-t border-slate-700 mt-2">
                             {activeData.map((entry, index) => (
                                 <div
                                     key={`legend-${index}`}
-                                    className="flex items-center gap-2 text-xs cursor-pointer hover:bg-slate-700/30 p-1 rounded transition-colors"
+                                    className="flex items-center gap-2 text-xs cursor-pointer hover:bg-slate-700/30 px-2 py-1 rounded transition-colors"
                                     onClick={() => handleSliceClick(entry, index)}
                                 >
                                     <div
                                         className="w-3 h-3 rounded-full flex-shrink-0"
                                         style={{ backgroundColor: COLORS[index % COLORS.length] }}
                                     />
-                                    <span className="text-slate-300 truncate" title={entry.name}>
+                                    <span className="text-slate-300" title={entry.name}>
                                         {entry.name}
                                     </span>
                                 </div>
