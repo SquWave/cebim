@@ -100,8 +100,8 @@ const AuthenticatedApp = () => {
         </div>
       </header>
 
-      {/* Main Content */}
-      <main className="pt-20 px-4 max-w-md mx-auto">
+      {/* Main Content - padding accounts for header height + safe area */}
+      <main className="px-4 max-w-md mx-auto" style={{ paddingTop: 'calc(64px + env(safe-area-inset-top, 0px) + 16px)' }}>
         {renderContent()}
       </main>
 
