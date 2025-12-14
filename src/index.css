@@ -30,11 +30,16 @@
   .pb-safe {
     padding-bottom: env(safe-area-inset-bottom);
   }
-  /* Header background extends into safe area */
-  .header-safe {
-    padding-top: env(safe-area-inset-top);
-    /* Extend background into notch/status bar area */
-    margin-top: calc(-1 * env(safe-area-inset-top));
-    padding-top: calc(env(safe-area-inset-top) + 0px);
+  /* Header background extends into safe area using pseudo-element */
+  .header-safe::before {
+    content: '';
+    position: absolute;
+    top: calc(-1 * env(safe-area-inset-top));
+    left: 0;
+    right: 0;
+    height: env(safe-area-inset-top);
+    background: inherit;
+    backdrop-filter: inherit;
+    -webkit-backdrop-filter: inherit;
   }
 }
