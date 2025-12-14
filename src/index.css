@@ -12,11 +12,13 @@
     @apply bg-slate-950 text-slate-100 font-sans antialiased;
     /* Allow native scrolling to fix mobile click misalignment issues */
     min-height: 100vh;
+    min-height: 100dvh; /* Dynamic viewport height for mobile */
   }
   
   #root {
     /* Allow root to take full height */
     min-height: 100vh;
+    min-height: 100dvh;
   }
 }
 
@@ -27,5 +29,12 @@
   }
   .pb-safe {
     padding-bottom: env(safe-area-inset-bottom);
+  }
+  /* Header background extends into safe area */
+  .header-safe {
+    padding-top: env(safe-area-inset-top);
+    /* Extend background into notch/status bar area */
+    margin-top: calc(-1 * env(safe-area-inset-top));
+    padding-top: calc(env(safe-area-inset-top) + 0px);
   }
 }

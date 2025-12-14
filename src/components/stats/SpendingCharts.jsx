@@ -212,7 +212,7 @@ const SpendingCharts = ({ transactions = [], categories = [], dateFilter, custom
                         </div>
 
                         {/* Custom Legend - Bottom Horizontal */}
-                        <div className="flex flex-wrap justify-center gap-x-4 gap-y-2 pt-4 border-t border-slate-700 mt-2">
+                        <div className="flex flex-wrap justify-center gap-x-4 gap-y-2 pt-4 border-t border-slate-700 mt-2 max-h-24 overflow-y-auto">
                             {activeData.map((entry, index) => (
                                 <div
                                     key={`legend-${index}`}

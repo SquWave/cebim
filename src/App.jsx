@@ -77,7 +77,7 @@ const AuthenticatedApp = () => {
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 font-sans pb-20">
       {/* Header */}
-      <header className="fixed top-0 left-0 right-0 bg-slate-950/95 backdrop-blur-xl border-b border-slate-800 z-50 pt-safe">
+      <header className="fixed top-0 left-0 right-0 bg-slate-950/95 backdrop-blur-xl border-b border-slate-800 z-50 pt-safe header-safe">
         <div className="max-w-md mx-auto px-4 h-16 flex items-center justify-between">
           <h1 className="text-xl font-bold bg-gradient-to-r from-indigo-400 to-emerald-400 bg-clip-text text-transparent">
             Cebim
