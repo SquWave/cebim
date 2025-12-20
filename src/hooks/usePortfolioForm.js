@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { fetchMarketData, searchStocks, TEFAS_FUNDS } from '../services/marketData';
-import { migrateFlatAssetToLots, computeAggregatedValues } from '../utils/assetHelpers';
+import { migrateFlatAssetToLots, migrateAssetToPeriods, getActivePeriod, dateStringToTimestamp } from '../utils/assetHelpers';
 
 /**
  * Custom hook for managing portfolio form state and logic
@@ -13,6 +13,7 @@ export const usePortfolioForm = ({ assets, onAddAsset, onUpdateAsset, rates }) =
     const [amount, setAmount] = useState('');
     const [cost, setCost] = useState('');
     const [type, setType] = useState('');
+    const [transactionDate, setTransactionDate] = useState(new Date().toISOString().split('T')[0]);
 
     // Autocomplete State
     const [suggestions, setSuggestions] = useState([]);
@@ -26,6 +27,7 @@ export const usePortfolioForm = ({ assets, onAddAsset, onUpdateAsset, rates }) =
             setAmount('');
             setCost('');
             setType('');
+            setTransactionDate(new Date().toISOString().split('T')[0]);
             setSuggestions([]);
             setShowSuggestions(false);
             isSelectionRef.current = false;
@@ -124,37 +126,81 @@ export const usePortfolioForm = ({ assets, onAddAsset, onUpdateAsset, rates }) =
 
         try {
             const assetName = name.toUpperCase();
-            const migratedAssets = assets.map(migrateFlatAssetToLots);
-            const existingAsset = migratedAssets.find(a => a.name === assetName && a.type === type);
+            const addedAtTimestamp = dateStringToTimestamp(transactionDate);
+
+            // Find existing asset
+            const existingAsset = assets.find(a =>
+                a.name?.toUpperCase() === assetName && a.type === type
+            );
 
             if (existingAsset) {
+                // Migrate to period structure
+                const periodAsset = migrateAssetToPeriods(migrateFlatAssetToLots(existingAsset));
+                let activePeriod = getActivePeriod(periodAsset);
+
+                // If no active period exists, create a new one
+                if (!activePeriod) {
+                    const newPeriodId = `period_${Date.now()}`;
+                    activePeriod = {
+                        id: newPeriodId,
+                        lots: [],
+                        sales: [],
+                        closedAt: null
+                    };
+                    periodAsset.periods.push(activePeriod);
+                    periodAsset.currentPeriodId = newPeriodId;
+                }
+
                 const newLot = {
                     id: `lot_${Date.now()}`,
                     amount: numAmount,
                     cost: numCost,
                     price: initialPrice,
-                    addedAt: Date.now()
+                    addedAt: addedAtTimestamp
                 };
 
+                // Update the active period with new lot
+                const updatedPeriods = periodAsset.periods.map(p => {
+                    if (p.id === activePeriod.id) {
+                        return { ...p, lots: [...p.lots, newLot] };
+                    }
+                    return p;
+                });
+
+                // Also update lots array for backward compatibility
                 const updatedAsset = {
-                    ...existingAsset,
-                    lots: [...existingAsset.lots, newLot]
+                    ...periodAsset,
+                    periods: updatedPeriods,
+                    lots: [...(periodAsset.lots || []), newLot]
                 };
 
                 await onUpdateAsset(updatedAsset);
             } else {
+                // Create new asset with period structure
+                const newPeriodId = `period_${Date.now()}`;
+                const newLot = {
+                    id: `lot_${Date.now()}`,
+                    amount: numAmount,
+                    cost: numCost,
+                    price: initialPrice,
+                    addedAt: addedAtTimestamp
+                };
+
                 const newAsset = {
                     id: Date.now(),
                     name: assetName,
                     type,
                     expanded: false,
-                    lots: [{
-                        id: `lot_${Date.now()}`,
-                        amount: numAmount,
-                        cost: numCost,
-                        price: initialPrice,
-                        addedAt: Date.now()
-                    }]
+                    currentPeriodId: newPeriodId,
+                    periods: [{
+                        id: newPeriodId,
+                        lots: [newLot],
+                        sales: [],
+                        closedAt: null
+                    }],
+                    // Backward compat
+                    lots: [newLot],
+                    sales: []
                 };
 
                 await onAddAsset(newAsset);
@@ -185,6 +231,8 @@ export const usePortfolioForm = ({ assets, onAddAsset, onUpdateAsset, rates }) =
         setCost,
         type,
         setType,
+        transactionDate,
+        setTransactionDate,
         // Autocomplete
         suggestions,
         showSuggestions,

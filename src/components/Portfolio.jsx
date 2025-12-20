@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, TrendingUp, RefreshCw, Trash2, Coins, Banknote, ArrowUpRight, PieChart, ReceiptTurkishLira } from 'lucide-react';
+import { Plus, TrendingUp, RefreshCw, Trash2, Coins, Banknote, ArrowUpRight, PieChart, ReceiptTurkishLira, History, Calendar } from 'lucide-react';
 import { fetchMarketData } from '../services/marketData';
-import { migrateFlatAssetToLots, computeAggregatedValues } from '../utils/assetHelpers';
+import { migrateFlatAssetToLots, migrateAssetToPeriods, computeAggregatedValues, formatTransactionDate } from '../utils/assetHelpers';
 import { formatCurrency } from '../utils/formatters';
 import MarketRatesTicker from './portfolio/MarketRatesTicker';
 import AssetCategoryList from './portfolio/AssetCategoryList';
+import TransactionHistory from './portfolio/TransactionHistory';
 import { usePortfolioForm } from '../hooks/usePortfolioForm';
 import { usePortfolioOperations } from '../hooks/usePortfolioOperations';
 
@@ -14,6 +15,12 @@ const Portfolio = ({ assets, onAddAsset, onUpdateAsset, onDeleteAsset, privacyMo
     const [rates, setRates] = useState(null);
     const [specificPrices, setSpecificPrices] = useState({});
     const [loadingRates, setLoadingRates] = useState(false);
+
+    // Position filter state
+    const [showAllPositions, setShowAllPositions] = useState(false);
+
+    // Transaction history modal state
+    const [showTransactionHistory, setShowTransactionHistory] = useState(false);
 
     // Use custom hooks for form and operations
     const formHook = usePortfolioForm({ assets, onAddAsset, onUpdateAsset, rates });
@@ -26,6 +33,7 @@ const Portfolio = ({ assets, onAddAsset, onUpdateAsset, onDeleteAsset, privacyMo
         amount, setAmount,
         cost, setCost,
         type, setType,
+        transactionDate, setTransactionDate,
         suggestions, showSuggestions, setShowSuggestions,
         handleSelectSuggestion, handleSubmit
     } = formHook;
@@ -134,20 +142,47 @@ const Portfolio = ({ assets, onAddAsset, onUpdateAsset, onDeleteAsset, privacyMo
                         Toplam Varlık: {privacyMode ? '₺***' : formatCurrency(totalInvestmentValue)}
                     </div>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex items-center gap-3">
+                    {/* Position Filter Toggle */}
+                    <div className="flex items-center gap-1.5 bg-slate-800 rounded-lg px-2 py-1">
+                        <span className={`text-xs font-medium transition-colors ${!showAllPositions ? 'text-indigo-400' : 'text-slate-500'}`}>
+                            Açık
+                        </span>
+                        <button
+                            onClick={() => setShowAllPositions(!showAllPositions)}
+                            className={`relative w-9 h-5 rounded-full transition-colors ${showAllPositions ? 'bg-indigo-600' : 'bg-slate-700'
+                                }`}
+                        >
+                            <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${showAllPositions ? 'translate-x-4' : 'translate-x-0.5'
+                                }`} />
+                        </button>
+                        <span className={`text-xs font-medium transition-colors ${showAllPositions ? 'text-indigo-400' : 'text-slate-500'}`}>
+                            Tümü
+                        </span>
+                    </div>
+
+                    {/* Transaction History Button */}
+                    <button
+                        onClick={() => setShowTransactionHistory(true)}
+                        className="p-2 bg-slate-800 rounded-full hover:bg-slate-700 transition-colors text-slate-400 hover:text-white"
+                        title="İşlem Geçmişi"
+                    >
+                        <History className="w-5 h-5" />
+                    </button>
+
                     <button
                         onClick={loadRates}
                         disabled={loadingRates}
                         className="p-2 bg-slate-800 rounded-full hover:bg-slate-700 transition-colors text-slate-400 hover:text-white"
                         title="Kurları Yenile"
                     >
-                        <RefreshCw className={`w-6 h-6 ${loadingRates ? 'animate-spin' : ''}`} />
+                        <RefreshCw className={`w-5 h-5 ${loadingRates ? 'animate-spin' : ''}`} />
                     </button>
                     <button
                         onClick={() => setIsAdding(!isAdding)}
                         className="p-2 bg-indigo-600 rounded-full hover:bg-indigo-700 transition-colors"
                     >
-                        <Plus className="w-6 h-6 text-white" />
+                        <Plus className="w-5 h-5 text-white" />
                     </button>
                 </div>
             </div>
@@ -254,6 +289,18 @@ const Portfolio = ({ assets, onAddAsset, onUpdateAsset, onDeleteAsset, privacyMo
                                 required
                             />
                         </div>
+
+                        {/* Transaction Date */}
+                        <div className="flex items-center gap-2">
+                            <Calendar className="w-4 h-4 text-slate-400" />
+                            <input
+                                type="date"
+                                value={transactionDate}
+                                onChange={(e) => setTransactionDate(e.target.value)}
+                                className="flex-1 bg-slate-800 border border-slate-700 rounded-lg p-3 text-white focus:outline-none focus:border-indigo-500"
+                            />
+                        </div>
+
                         <button
                             type="submit"
                             className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-3 rounded-lg transition-colors"
@@ -265,7 +312,10 @@ const Portfolio = ({ assets, onAddAsset, onUpdateAsset, onDeleteAsset, privacyMo
             )}
 
             <AssetCategoryList
-                assets={assets}
+                assets={showAllPositions ? assets : assets.filter(rawAsset => {
+                    const { totalAmount } = computeAggregatedValues(migrateFlatAssetToLots(rawAsset));
+                    return totalAmount > 0;
+                })}
                 privacyMode={privacyMode}
                 formatCurrency={formatCurrency}
                 renderAssetCard={(rawAsset, computed) => {
@@ -354,7 +404,8 @@ const Portfolio = ({ assets, onAddAsset, onUpdateAsset, onDeleteAsset, privacyMo
                                             setIsSelling(asset.id);
                                             setSaleForm({
                                                 amount: '',
-                                                salePrice: currentPrice
+                                                salePrice: currentPrice,
+                                                date: new Date().toISOString().split('T')[0]
                                             });
                                         }}
                                         className="p-2 text-slate-500 hover:text-amber-500 transition-colors"
@@ -407,6 +458,17 @@ const Portfolio = ({ assets, onAddAsset, onUpdateAsset, onDeleteAsset, privacyMo
                                                     placeholder="Fiyat"
                                                 />
                                             </div>
+                                        </div>
+
+                                        {/* Sale Date */}
+                                        <div>
+                                            <label className="text-xs text-slate-400 block mb-1">İşlem Tarihi</label>
+                                            <input
+                                                type="date"
+                                                value={saleForm.date}
+                                                onChange={(e) => setSaleForm(prev => ({ ...prev, date: e.target.value }))}
+                                                className="w-full bg-slate-700 border border-slate-600 rounded p-2 text-white text-sm focus:outline-none focus:border-amber-500"
+                                            />
                                         </div>
 
                                         {saleForm.amount && saleForm.salePrice && (
@@ -508,6 +570,15 @@ const Portfolio = ({ assets, onAddAsset, onUpdateAsset, onDeleteAsset, privacyMo
                                                                         />
                                                                     </div>
                                                                 </div>
+                                                                <div>
+                                                                    <label className="text-xs text-slate-400 block mb-1">İşlem Tarihi</label>
+                                                                    <input
+                                                                        type="date"
+                                                                        value={editForm.date}
+                                                                        onChange={(e) => setEditForm(prev => ({ ...prev, date: e.target.value }))}
+                                                                        className="w-full bg-slate-700 border border-slate-600 rounded p-2 text-white text-sm focus:outline-none focus:border-indigo-500"
+                                                                    />
+                                                                </div>
                                                                 <div className="flex gap-2">
                                                                     <button
                                                                         onClick={() => handleSaveLot(asset, lot.id)}
@@ -532,8 +603,10 @@ const Portfolio = ({ assets, onAddAsset, onUpdateAsset, onDeleteAsset, privacyMo
                                                                         <span className="text-sm text-white font-medium">{lot.amount} Adet</span>
                                                                         <span className="text-xs text-slate-500">@{formatCurrency(lot.cost)}</span>
                                                                     </div>
-                                                                    <div className="text-xs text-slate-500">
-                                                                        Toplam Maliyet: {formatCurrency(lotCostTotal)}
+                                                                    <div className="text-xs text-slate-500 flex items-center gap-2">
+                                                                        <span>Maliyet: {formatCurrency(lotCostTotal)}</span>
+                                                                        <span>•</span>
+                                                                        <span>{formatTransactionDate(lot.addedAt)}</span>
                                                                     </div>
                                                                 </div>
                                                                 <div className="flex items-start gap-2">
@@ -675,6 +748,13 @@ const Portfolio = ({ assets, onAddAsset, onUpdateAsset, onDeleteAsset, privacyMo
                         </div>
                     );
                 }}
+            />
+
+            {/* Transaction History Modal */}
+            <TransactionHistory
+                assets={assets}
+                isOpen={showTransactionHistory}
+                onClose={() => setShowTransactionHistory(false)}
             />
         </div>
     );
