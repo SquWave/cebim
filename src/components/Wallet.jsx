@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Plus, Trash2, ArrowUpCircle, ArrowDownCircle, Wallet as WalletIcon, CreditCard, Building2, ArrowRightLeft, Pencil, X, Check, HandCoins, Home, Utensils, Bus, Car, ShoppingBag, Film, HeartPulse, ChartNoAxesCombined, BanknoteArrowDown, IterationCw, ReceiptText } from 'lucide-react';
+import { Plus, Trash2, ArrowUpCircle, ArrowDownCircle, Wallet as WalletIcon, CreditCard, Building2, ArrowRightLeft, Pencil, X, Check, HandCoins, Home, Utensils, Bus, Car, ShoppingBag, Film, HeartPulse, ChartNoAxesCombined, BanknoteArrowDown, IterationCw, ReceiptText, Filter, Calendar } from 'lucide-react';
 import { formatDateForInput } from '../utils/formatters';
 
 const Wallet = ({ transactions = [], onAddTransaction, onUpdateTransaction, onDeleteTransaction, accounts = [], onAddAccount, onUpdateAccount, onDeleteAccount, categories = [], privacyMode = false }) => {
@@ -21,6 +21,13 @@ const Wallet = ({ transactions = [], onAddTransaction, onUpdateTransaction, onDe
     const [initialBalance, setInitialBalance] = useState('');
     const [accountType, setAccountType] = useState('cash');
     const [editingAccount, setEditingAccount] = useState(null);
+
+    // Filter State
+    const [showFilters, setShowFilters] = useState(false);
+    const [filterCategory, setFilterCategory] = useState(''); // Ana kategori ID
+    const [filterAccount, setFilterAccount] = useState('');   // Hesap ID
+    const [filterStartDate, setFilterStartDate] = useState(''); // YYYY-MM-DD
+    const [filterEndDate, setFilterEndDate] = useState('');     // YYYY-MM-DD
 
     // Ensure transactions is an array
     const safeTransactions = transactions || [];
@@ -87,6 +94,46 @@ const Wallet = ({ transactions = [], onAddTransaction, onUpdateTransaction, onDe
     const availableCategories = useMemo(() => {
         return categories.filter(c => c.type === type);
     }, [categories, type]);
+
+    // Filtered transactions for display
+    const filteredTransactions = useMemo(() => {
+        return safeTransactions.filter(t => {
+            // Kategori filtresi (ana kategori)
+            if (filterCategory) {
+                const mainCat = categories.find(c => c.id === filterCategory);
+                if (!mainCat) return false;
+                // Check if transaction category is in main category's subcategories or matches main category name
+                if (!mainCat.subcategories.includes(t.category) && mainCat.name !== t.category) return false;
+            }
+            // Hesap filtresi
+            if (filterAccount && t.accountId !== filterAccount) return false;
+            // Tarih aralığı filtresi
+            if (filterStartDate) {
+                const txDate = new Date(t.date);
+                const startDate = new Date(filterStartDate);
+                startDate.setHours(0, 0, 0, 0);
+                if (txDate < startDate) return false;
+            }
+            if (filterEndDate) {
+                const txDate = new Date(t.date);
+                const endDate = new Date(filterEndDate);
+                endDate.setHours(23, 59, 59, 999);
+                if (txDate > endDate) return false;
+            }
+            return true;
+        });
+    }, [safeTransactions, filterCategory, filterAccount, filterStartDate, filterEndDate, categories]);
+
+    // Check if any filter is active
+    const hasActiveFilters = filterCategory || filterAccount || filterStartDate || filterEndDate;
+
+    // Clear all filters
+    const clearFilters = () => {
+        setFilterCategory('');
+        setFilterAccount('');
+        setFilterStartDate('');
+        setFilterEndDate('');
+    };
 
     // --- Account Handlers ---
     const handleAddAccount = (e) => {
@@ -496,11 +543,102 @@ const Wallet = ({ transactions = [], onAddTransaction, onUpdateTransaction, onDe
 
             {/* Transactions List */}
             <div className="space-y-3">
-                <h3 className="text-lg font-semibold text-white">Son İşlemler</h3>
-                {safeTransactions.length === 0 ? (
-                    <div className="text-center py-10 text-slate-500">Henüz işlem yok.</div>
+                {/* Header with Filter Button */}
+                <div className="flex items-center justify-between">
+                    <h3 className="text-lg font-semibold text-white">Son İşlemler</h3>
+                    <button
+                        onClick={() => setShowFilters(!showFilters)}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${showFilters || hasActiveFilters
+                                ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/50'
+                                : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
+                            }`}
+                    >
+                        <Filter className="w-4 h-4" />
+                        Filtre
+                        {hasActiveFilters && (
+                            <span className="ml-1 w-2 h-2 bg-indigo-400 rounded-full"></span>
+                        )}
+                    </button>
+                </div>
+
+                {/* Filter Panel */}
+                {showFilters && (
+                    <div className="p-4 bg-slate-900 rounded-xl border border-slate-800 animate-in fade-in slide-in-from-top-2 space-y-3">
+                        {/* Category Filter */}
+                        <div>
+                            <label className="text-xs text-slate-400 block mb-1">Kategori</label>
+                            <select
+                                value={filterCategory}
+                                onChange={(e) => setFilterCategory(e.target.value)}
+                                className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-white text-sm focus:outline-none focus:border-indigo-500"
+                            >
+                                <option value="">Tüm Kategoriler</option>
+                                {categories.map(cat => (
+                                    <option key={cat.id} value={cat.id}>{cat.name}</option>
+                                ))}
+                            </select>
+                        </div>
+
+                        {/* Account Filter */}
+                        <div>
+                            <label className="text-xs text-slate-400 block mb-1">Hesap</label>
+                            <select
+                                value={filterAccount}
+                                onChange={(e) => setFilterAccount(e.target.value)}
+                                className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-white text-sm focus:outline-none focus:border-indigo-500"
+                            >
+                                <option value="">Tüm Hesaplar</option>
+                                {accounts.map(acc => (
+                                    <option key={acc.id} value={acc.id}>{acc.name}</option>
+                                ))}
+                            </select>
+                        </div>
+
+                        {/* Date Range Filter */}
+                        <div className="grid grid-cols-2 gap-2">
+                            <div>
+                                <label className="text-xs text-slate-400 block mb-1">Başlangıç</label>
+                                <input
+                                    type="date"
+                                    value={filterStartDate}
+                                    onChange={(e) => setFilterStartDate(e.target.value)}
+                                    className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-white text-sm focus:outline-none focus:border-indigo-500"
+                                />
+                            </div>
+                            <div>
+                                <label className="text-xs text-slate-400 block mb-1">Bitiş</label>
+                                <input
+                                    type="date"
+                                    value={filterEndDate}
+                                    onChange={(e) => setFilterEndDate(e.target.value)}
+                                    className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-white text-sm focus:outline-none focus:border-indigo-500"
+                                />
+                            </div>
+                        </div>
+
+                        {/* Clear Filters Button */}
+                        {hasActiveFilters && (
+                            <button
+                                onClick={clearFilters}
+                                className="w-full py-2 text-sm text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-lg transition-colors"
+                            >
+                                Filtreleri Temizle
+                            </button>
+                        )}
+
+                        {/* Filter Summary */}
+                        <div className="text-xs text-slate-500 text-center">
+                            {filteredTransactions.length} / {safeTransactions.length} işlem gösteriliyor
+                        </div>
+                    </div>
+                )}
+
+                {filteredTransactions.length === 0 ? (
+                    <div className="text-center py-10 text-slate-500">
+                        {hasActiveFilters ? 'Filtreye uygun işlem bulunamadı.' : 'Henüz işlem yok.'}
+                    </div>
                 ) : (
-                    safeTransactions.sort((a, b) => new Date(b.date) - new Date(a.date)).map((t) => {
+                    filteredTransactions.sort((a, b) => new Date(b.date) - new Date(a.date)).map((t) => {
                         const account = accounts.find(a => a.id === t.accountId);
                         const toAccount = t.toAccountId ? accounts.find(a => a.id === t.toAccountId) : null;
 

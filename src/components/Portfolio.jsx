@@ -135,7 +135,7 @@ const Portfolio = ({ assets, onAddAsset, onUpdateAsset, onDeleteAsset, privacyMo
 
     return (
         <div className="pb-20">
-            <div className="flex justify-between items-center mb-6">
+            <div className="flex justify-between items-center mb-4">
                 <div>
                     <h2 className="text-2xl font-bold text-white">Yatırım</h2>
                     <div className="text-sm text-slate-400">
@@ -143,24 +143,6 @@ const Portfolio = ({ assets, onAddAsset, onUpdateAsset, onDeleteAsset, privacyMo
                     </div>
                 </div>
                 <div className="flex items-center gap-3">
-                    {/* Position Filter Toggle */}
-                    <div className="flex items-center gap-1.5 bg-slate-800 rounded-lg px-2 py-1">
-                        <span className={`text-xs font-medium transition-colors ${!showAllPositions ? 'text-indigo-400' : 'text-slate-500'}`}>
-                            Açık
-                        </span>
-                        <button
-                            onClick={() => setShowAllPositions(!showAllPositions)}
-                            className={`relative w-9 h-5 rounded-full transition-colors ${showAllPositions ? 'bg-indigo-600' : 'bg-slate-700'
-                                }`}
-                        >
-                            <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${showAllPositions ? 'translate-x-4' : 'translate-x-0.5'
-                                }`} />
-                        </button>
-                        <span className={`text-xs font-medium transition-colors ${showAllPositions ? 'text-indigo-400' : 'text-slate-500'}`}>
-                            Tümü
-                        </span>
-                    </div>
-
                     {/* Transaction History Button */}
                     <button
                         onClick={() => setShowTransactionHistory(true)}
@@ -185,6 +167,24 @@ const Portfolio = ({ assets, onAddAsset, onUpdateAsset, onDeleteAsset, privacyMo
                         <Plus className="w-5 h-5 text-white" />
                     </button>
                 </div>
+            </div>
+
+            {/* Position Filter Toggle - Below header */}
+            <div className="flex items-center justify-center gap-2 mb-4 py-2 bg-slate-900/50 rounded-lg border border-slate-800">
+                <span className={`text-xs font-medium transition-colors ${!showAllPositions ? 'text-indigo-400' : 'text-slate-500'}`}>
+                    Açık Pozisyonlar
+                </span>
+                <button
+                    onClick={() => setShowAllPositions(!showAllPositions)}
+                    className={`relative w-10 h-5 rounded-full transition-colors ${showAllPositions ? 'bg-indigo-600' : 'bg-slate-700'
+                        }`}
+                >
+                    <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${showAllPositions ? 'translate-x-5' : 'translate-x-0.5'
+                        }`} />
+                </button>
+                <span className={`text-xs font-medium transition-colors ${showAllPositions ? 'text-indigo-400' : 'text-slate-500'}`}>
+                    Tüm Pozisyonlar
+                </span>
             </div>
 
             {/* Market Rates Ticker */}
