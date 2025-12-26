@@ -92,15 +92,43 @@ const Portfolio = ({ assets, onAddAsset, onUpdateAsset, onDeleteAsset, privacyMo
                 newPrice = specificPrices[assetName];
             }
 
-            const currentPrice = asset.lots[0]?.price || 0;
+            // Get current price from periods first (period-aware), fallback to lots
+            let currentPrice = 0;
+            if (asset.periods && asset.periods.length > 0) {
+                const activePeriod = asset.periods.find(p => p.closedAt === null);
+                if (activePeriod && activePeriod.lots && activePeriod.lots.length > 0) {
+                    currentPrice = activePeriod.lots[0]?.price || 0;
+                }
+            }
+            if (currentPrice === 0 && asset.lots && asset.lots.length > 0) {
+                currentPrice = asset.lots[0]?.price || 0;
+            }
 
-            if (newPrice && newPrice !== currentPrice) {
-                const updatedLots = asset.lots.map(lot => ({
+            // Update if we have a new price (always update to ensure freshness)
+            if (newPrice && newPrice > 0) {
+                // Update lots at asset level
+                const updatedLots = (asset.lots || []).map(lot => ({
                     ...lot,
                     price: newPrice
                 }));
 
-                onUpdateAsset({ ...asset, lots: updatedLots });
+                // Also update lots in periods if they exist (period-aware)
+                let updatedPeriods = asset.periods;
+                if (asset.periods && asset.periods.length > 0) {
+                    updatedPeriods = asset.periods.map(period => ({
+                        ...period,
+                        lots: (period.lots || []).map(lot => ({
+                            ...lot,
+                            price: newPrice
+                        }))
+                    }));
+                }
+
+                onUpdateAsset({
+                    ...asset,
+                    lots: updatedLots,
+                    periods: updatedPeriods
+                });
                 updatedCount++;
             } else if (!newPrice) {
                 errorCount++;
