@@ -12,9 +12,10 @@ const MIDAS_API_URL = `${API_BASE_URL}/api/stocks`;
 
 // Fallback manual rates
 const FALLBACK_RATES = {
-    USD: 34.50,
-    EUR: 36.20,
-    GOLD: 2950.00 // Gram Altın
+    USD: 43.13,
+    EUR: 50.25,
+    GOLD: 6220.00, // Gram Altın
+    SILVER: 108.00  // Gram Gümüş
 };
 
 // Cache for Midas Data
@@ -260,21 +261,26 @@ export const fetchMarketData = async (assets = []) => {
         let usdRate = null;
         let eurRate = null;
         let goldRate = null;
+        let silverRate = null;
 
         if (Array.isArray(fxData)) {
             const usdEntry = fxData.find(item => item.Code === 'USDTRY');
             const eurEntry = fxData.find(item => item.Code === 'EURTRY');
             const goldEntry = fxData.find(item => item.Code === 'GAUTRY'); // Gram Altın
+            const silverEntry = fxData.find(item => item.Code === 'XAGTRY'); // Ons Gümüş (TRY)
 
             if (usdEntry && typeof usdEntry.Last === 'number') usdRate = usdEntry.Last;
             if (eurEntry && typeof eurEntry.Last === 'number') eurRate = eurEntry.Last;
             if (goldEntry && typeof goldEntry.Last === 'number') goldRate = goldEntry.Last;
+            // XAGTRY is ounce price, divide by 31.10 to get gram price
+            if (silverEntry && typeof silverEntry.Last === 'number') silverRate = silverEntry.Last / 31.10;
         }
 
         const marketData = {
             USD: usdRate,
             EUR: eurRate,
             GOLD: goldRate,
+            SILVER: silverRate,
             lastUpdated: new Date().toISOString()
         };
 

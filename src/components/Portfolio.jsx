@@ -87,6 +87,7 @@ const Portfolio = ({ assets, onAddAsset, onUpdateAsset, onDeleteAsset, privacyMo
             }
             else if (asset.type === 'gold') {
                 if (assetName.includes('ALTIN') || assetName.includes('GOLD')) newPrice = rates.GOLD;
+                else if (assetName.includes('GUMUS') || assetName.includes('SILVER')) newPrice = rates.SILVER;
             }
             else if ((asset.type === 'stock' || asset.type === 'fund') && specificPrices[assetName]) {
                 newPrice = specificPrices[assetName];
@@ -239,13 +240,13 @@ const Portfolio = ({ assets, onAddAsset, onUpdateAsset, onDeleteAsset, privacyMo
                                 type="button"
                                 onClick={() => {
                                     setType(t);
-                                    if (t === 'gold') setName('Gram Altın');
+                                    if (t === 'gold') setName('');
                                     else setName('');
                                 }}
                                 className={`py-2 rounded-lg text-xs sm:text-sm font-medium capitalize transition-colors ${type === t ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/50' : 'bg-slate-800 text-slate-400'
                                     }`}
                             >
-                                {t === 'stock' ? 'Hisse' : t === 'fund' ? 'Fon' : t === 'gold' ? 'Altın' : 'Döviz'}
+                                {t === 'stock' ? 'Hisse' : t === 'fund' ? 'Fon' : t === 'gold' ? 'K.Madenler' : 'Döviz'}
                             </button>
                         ))}
                     </div>
@@ -264,12 +265,16 @@ const Portfolio = ({ assets, onAddAsset, onUpdateAsset, onDeleteAsset, privacyMo
                                     <option value="EUR">EUR</option>
                                 </select>
                             ) : type === 'gold' ? (
-                                <input
-                                    type="text"
-                                    value="Gram Altın"
-                                    readOnly
-                                    className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-slate-400 focus:outline-none cursor-not-allowed"
-                                />
+                                <select
+                                    value={name}
+                                    onChange={(e) => setName(e.target.value)}
+                                    className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-white focus:outline-none focus:border-indigo-500"
+                                    required
+                                >
+                                    <option value="" disabled>Kıymetli Maden Seçiniz</option>
+                                    <option value="GRAM ALTIN">Gram Altın</option>
+                                    <option value="GRAM GUMUS">Gram Gümüş</option>
+                                </select>
                             ) : (
                                 <>
                                     <input
@@ -372,7 +377,7 @@ const Portfolio = ({ assets, onAddAsset, onUpdateAsset, onDeleteAsset, privacyMo
                                         <div>
                                             <div className="font-bold text-white text-lg">{asset.name}</div>
                                             <div className="text-xs text-slate-400 capitalize">
-                                                {asset.type === 'stock' ? 'Hisse Senedi' : asset.type === 'fund' ? 'Yatırım Fonu' : asset.type === 'gold' ? 'Gram Altın' : 'Döviz'}
+                                                {asset.type === 'stock' ? 'Hisse Senedi' : asset.type === 'fund' ? 'Yatırım Fonu' : asset.type === 'gold' ? 'Kıymetli Madenler' : 'Döviz'}
                                                 <span className="mx-1">•</span>
                                                 {privacyMode ? '***' : totalAmount} Adet
 

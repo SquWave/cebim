@@ -64,7 +64,7 @@ const AssetPerformanceCards = ({ assets = [], marketData = {}, privacyMode = fal
             const plPercent = cost > 0 ? (pl / cost) * 100 : 0;
 
             let typeLabel = 'Diğer';
-            if (rawAsset.type === 'gold') typeLabel = 'Altın';
+            if (rawAsset.type === 'gold') typeLabel = 'Kıymetli Madenler';
             else if (rawAsset.type === 'stock') typeLabel = 'Hisse Senedi';
             else if (rawAsset.type === 'fund') typeLabel = 'Yatırım Fonu';
             else if (rawAsset.type === 'currency') typeLabel = 'Döviz';

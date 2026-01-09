@@ -8,7 +8,7 @@ const AssetAllocationChart = ({ assets = [], marketData = {}, privacyMode = fals
 
     // Type label mapping
     const getTypeLabel = (type) => {
-        if (type === 'gold') return 'Altın';
+        if (type === 'gold') return 'Kıymetli Madenler';
         if (type === 'stock') return 'Hisse Senedi';
         if (type === 'fund') return 'Yatırım Fonu';
         if (type === 'currency') return 'Döviz';
