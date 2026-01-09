@@ -105,7 +105,8 @@ export const usePortfolioForm = ({ assets, onAddAsset, onUpdateAsset, rates }) =
             else if (name === 'EUR') initialPrice = rates.EUR;
         }
         else if (type === 'gold' && rates) {
-            initialPrice = rates.GOLD;
+            if (name === 'GRAM GUMUS') initialPrice = rates.SILVER;
+            else initialPrice = rates.GOLD;
         }
         // If it's a stock, try to fetch the current price immediately
         else if (type === 'stock' && rates && rates.specificPrices) {

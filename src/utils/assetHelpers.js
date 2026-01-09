@@ -100,10 +100,10 @@ export const getActivePeriod = (asset) => {
  */
 export const shouldClosePeriod = (period) => {
     if (!period || !period.lots) return false;
-    
+
     const totalPurchased = period.lots.reduce((sum, lot) => sum + (lot.amount || 0), 0);
     const totalSold = (period.sales || []).reduce((sum, sale) => sum + (sale.amount || 0), 0);
-    
+
     return totalPurchased - totalSold <= 0;
 };
 
@@ -197,7 +197,7 @@ export { formatCurrency } from './formatters';
  * Category configuration for asset types
  */
 export const categoryConfig = {
-    gold: { label: 'Altın', order: 1 },
+    gold: { label: 'Kıymetli Madenler', order: 1 },
     stock: { label: 'Hisse Senedi', order: 2 },
     fund: { label: 'Yatırım Fonu', order: 3 },
     currency: { label: 'Döviz', order: 4 }

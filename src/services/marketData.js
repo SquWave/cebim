@@ -273,7 +273,11 @@ export const fetchMarketData = async (assets = []) => {
             if (eurEntry && typeof eurEntry.Last === 'number') eurRate = eurEntry.Last;
             if (goldEntry && typeof goldEntry.Last === 'number') goldRate = goldEntry.Last;
             // XAGTRY is ounce price, divide by 31.10 to get gram price
-            if (silverEntry && typeof silverEntry.Last === 'number') silverRate = silverEntry.Last / 31.10;
+            if (silverEntry && typeof silverEntry.Last === 'number') {
+                silverRate = silverEntry.Last / 31.10;
+            } else {
+                silverRate = FALLBACK_RATES.SILVER;
+            }
         }
 
         const marketData = {
