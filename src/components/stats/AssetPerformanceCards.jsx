@@ -56,6 +56,9 @@ const AssetPerformanceCards = ({ assets = [], marketData = {}, privacyMode = fal
             }
 
             const value = currentAmount * Number(currentPrice);
+
+            // Skip assets with 0 or negative amount
+            if (currentAmount <= 0) return;
             const cost = currentAmount * avgCost;
             const pl = value - cost;
             const plPercent = cost > 0 ? (pl / cost) * 100 : 0;

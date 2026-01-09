@@ -112,10 +112,15 @@ const Portfolio = ({ assets, onAddAsset, onUpdateAsset, onDeleteAsset, privacyMo
                     price: newPrice
                 }));
 
+                // Build update object
+                const updateData = {
+                    ...asset,
+                    lots: updatedLots
+                };
+
                 // Also update lots in periods if they exist (period-aware)
-                let updatedPeriods = asset.periods;
                 if (asset.periods && asset.periods.length > 0) {
-                    updatedPeriods = asset.periods.map(period => ({
+                    updateData.periods = asset.periods.map(period => ({
                         ...period,
                         lots: (period.lots || []).map(lot => ({
                             ...lot,
@@ -124,11 +129,7 @@ const Portfolio = ({ assets, onAddAsset, onUpdateAsset, onDeleteAsset, privacyMo
                     }));
                 }
 
-                onUpdateAsset({
-                    ...asset,
-                    lots: updatedLots,
-                    periods: updatedPeriods
-                });
+                onUpdateAsset(updateData);
                 updatedCount++;
             } else if (!newPrice) {
                 errorCount++;
