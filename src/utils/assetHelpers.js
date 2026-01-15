@@ -54,7 +54,8 @@ export const migrateFlatAssetToLots = (flatAsset) => {
             cost: flatAsset.cost,
             price: flatAsset.price,
             addedAt: Date.now()
-        }]
+        }],
+        sales: flatAsset.sales || [] // Ensure sales is always defined
     };
 };
 
@@ -82,8 +83,8 @@ export const migrateAssetToPeriods = (asset) => {
             closedAt: null // null means active period
         }],
         // Keep old fields for backward compatibility during transition
-        lots: lotBasedAsset.lots,
-        sales: lotBasedAsset.sales
+        lots: lotBasedAsset.lots || [],
+        sales: lotBasedAsset.sales || []
     };
 };
 

@@ -11,7 +11,7 @@ const COLORS = {
 };
 
 const CATEGORY_LABELS = {
-    gold: 'Kıymetli Madenler',
+    gold: 'K. Madenler',
     stock: 'Hisse',
     fund: 'Fon',
     currency: 'Döviz'
