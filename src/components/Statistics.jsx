@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { PieChart, Wallet } from 'lucide-react';
 import WalletAnalysis from './stats/WalletAnalysis';
 import PortfolioSummary from './stats/PortfolioSummary';
+import RealizedPLSummary from './stats/RealizedPLSummary';
+import RealizedPLTrend from './stats/RealizedPLTrend';
 import AssetAllocationChart from './stats/AssetAllocationChart';
 import AssetPerformanceCards from './stats/AssetPerformanceCards';
 
@@ -40,6 +42,8 @@ const Statistics = ({ transactions = [], accounts = [], categories = [], assets 
                 ) : (
                     <div className="space-y-6">
                         <PortfolioSummary assets={assets} marketData={marketData} privacyMode={privacyMode} />
+                        <RealizedPLSummary assets={assets} privacyMode={privacyMode} />
+                        <RealizedPLTrend assets={assets} privacyMode={privacyMode} />
                         <AssetAllocationChart assets={assets} marketData={marketData} privacyMode={privacyMode} />
                         <AssetPerformanceCards assets={assets} marketData={marketData} privacyMode={privacyMode} />
                     </div>

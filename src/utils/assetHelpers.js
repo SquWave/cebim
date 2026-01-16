@@ -210,3 +210,255 @@ export const categoryConfig = {
 export const getCategoryLabel = (type) => {
     return categoryConfig[type]?.label || type;
 };
+
+/**
+ * Compute realized profit/loss from all sales across assets
+ * @param {Array} assets - Array of assets with sales data
+ * @returns {Object} Realized P/L statistics
+ */
+export const computeRealizedPL = (assets = []) => {
+    let totalRevenue = 0;      // Toplam satış geliri
+    let totalCost = 0;         // Toplam satış maliyeti
+    let totalProfit = 0;       // Toplam kar/zarar
+    let totalSaleCount = 0;    // Toplam satış adedi
+    let profitableSales = 0;   // Karlı satış sayısı
+    let lossSales = 0;         // Zararlı satış sayısı
+    const salesByAsset = {};   // Varlık bazlı satışlar
+
+    assets.forEach(asset => {
+        // Get sales from periods first, fallback to direct sales array
+        let allSales = [];
+
+        if (asset.periods && asset.periods.length > 0) {
+            asset.periods.forEach(period => {
+                if (period.sales && period.sales.length > 0) {
+                    allSales = [...allSales, ...period.sales];
+                }
+            });
+        }
+
+        // Also check direct sales array (backward compat)
+        if (asset.sales && asset.sales.length > 0) {
+            // Avoid duplicates - only add if not already in allSales
+            asset.sales.forEach(sale => {
+                if (!allSales.some(s => s.id === sale.id)) {
+                    allSales.push(sale);
+                }
+            });
+        }
+
+        if (allSales.length === 0) return;
+
+        const assetSales = {
+            name: asset.name,
+            type: asset.type,
+            sales: [],
+            totalRevenue: 0,
+            totalCost: 0,
+            totalProfit: 0
+        };
+
+        allSales.forEach(sale => {
+            const amount = Number(sale.amount) || 0;
+            const salePrice = Number(sale.salePrice) || 0;
+            const avgCost = Number(sale.avgCost) || 0;
+
+            const revenue = amount * salePrice;
+            const cost = amount * avgCost;
+            // Use stored profit if available, otherwise calculate
+            const profit = sale.profit !== undefined ? Number(sale.profit) : (revenue - cost);
+
+            totalRevenue += revenue;
+            totalCost += cost;
+            totalProfit += profit;
+            totalSaleCount++;
+
+            if (profit > 0) profitableSales++;
+            else if (profit < 0) lossSales++;
+
+            assetSales.sales.push({
+                ...sale,
+                revenue,
+                cost,
+                calculatedProfit: profit
+            });
+            assetSales.totalRevenue += revenue;
+            assetSales.totalCost += cost;
+            assetSales.totalProfit += profit;
+        });
+
+        if (assetSales.sales.length > 0) {
+            salesByAsset[asset.id] = assetSales;
+        }
+    });
+
+    const profitPercentage = totalCost > 0 ? (totalProfit / totalCost) * 100 : 0;
+    const successRate = totalSaleCount > 0 ? (profitableSales / totalSaleCount) * 100 : 0;
+
+    return {
+        totalRevenue,
+        totalCost,
+        totalProfit,
+        profitPercentage,
+        totalSaleCount,
+        profitableSales,
+        lossSales,
+        successRate,
+        salesByAsset
+    };
+};
+
+/**
+ * Compute realized P/L grouped by month
+ * @param {Array} assets - Array of assets with sales data
+ * @returns {Array} Monthly P/L data sorted by date
+ */
+export const computeRealizedPLByMonth = (assets = []) => {
+    const monthlyData = {};
+
+    assets.forEach(asset => {
+        let allSales = [];
+
+        if (asset.periods && asset.periods.length > 0) {
+            asset.periods.forEach(period => {
+                if (period.sales && period.sales.length > 0) {
+                    allSales = [...allSales, ...period.sales];
+                }
+            });
+        }
+
+        if (asset.sales && asset.sales.length > 0) {
+            asset.sales.forEach(sale => {
+                if (!allSales.some(s => s.id === sale.id)) {
+                    allSales.push(sale);
+                }
+            });
+        }
+
+        allSales.forEach(sale => {
+            if (!sale.soldAt) return;
+
+            const date = new Date(sale.soldAt);
+            const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+            const monthLabel = date.toLocaleDateString('tr-TR', { month: 'short', year: 'numeric' });
+
+            if (!monthlyData[monthKey]) {
+                monthlyData[monthKey] = {
+                    month: monthKey,
+                    label: monthLabel,
+                    profit: 0,
+                    revenue: 0,
+                    cost: 0,
+                    count: 0
+                };
+            }
+
+            const amount = Number(sale.amount) || 0;
+            const salePrice = Number(sale.salePrice) || 0;
+            const avgCost = Number(sale.avgCost) || 0;
+            const profit = sale.profit !== undefined ? Number(sale.profit) : (amount * salePrice - amount * avgCost);
+
+            monthlyData[monthKey].profit += profit;
+            monthlyData[monthKey].revenue += amount * salePrice;
+            monthlyData[monthKey].cost += amount * avgCost;
+            monthlyData[monthKey].count++;
+        });
+    });
+
+    // Sort by month and return array
+    return Object.values(monthlyData).sort((a, b) => a.month.localeCompare(b.month));
+};
+
+/**
+ * Compute average holding period using FIFO method
+ * @param {Array} assets - Array of assets with lots and sales data
+ * @returns {Object} Average holding stats
+ */
+export const computeAverageHoldingPeriod = (assets = []) => {
+    let totalHoldingDays = 0;
+    let totalSalesWithDates = 0;
+
+    assets.forEach(asset => {
+        // Get all lots sorted by date (FIFO)
+        let allLots = [];
+        if (asset.periods && asset.periods.length > 0) {
+            asset.periods.forEach(period => {
+                if (period.lots && period.lots.length > 0) {
+                    allLots = [...allLots, ...period.lots];
+                }
+            });
+        }
+        if (asset.lots && asset.lots.length > 0) {
+            asset.lots.forEach(lot => {
+                if (!allLots.some(l => l.id === lot.id)) {
+                    allLots.push(lot);
+                }
+            });
+        }
+
+        // Sort lots by addedAt (FIFO)
+        allLots.sort((a, b) => (a.addedAt || 0) - (b.addedAt || 0));
+
+        // Get all sales
+        let allSales = [];
+        if (asset.periods && asset.periods.length > 0) {
+            asset.periods.forEach(period => {
+                if (period.sales && period.sales.length > 0) {
+                    allSales = [...allSales, ...period.sales];
+                }
+            });
+        }
+        if (asset.sales && asset.sales.length > 0) {
+            asset.sales.forEach(sale => {
+                if (!allSales.some(s => s.id === sale.id)) {
+                    allSales.push(sale);
+                }
+            });
+        }
+
+        // Sort sales by soldAt
+        allSales.sort((a, b) => (a.soldAt || 0) - (b.soldAt || 0));
+
+        // FIFO matching
+        let lotIndex = 0;
+        let remainingInLot = allLots[0]?.amount || 0;
+
+        allSales.forEach(sale => {
+            if (!sale.soldAt) return;
+
+            let remainingToSell = Number(sale.amount) || 0;
+
+            while (remainingToSell > 0 && lotIndex < allLots.length) {
+                const lot = allLots[lotIndex];
+                if (!lot.addedAt) {
+                    lotIndex++;
+                    remainingInLot = allLots[lotIndex]?.amount || 0;
+                    continue;
+                }
+
+                const amountFromThisLot = Math.min(remainingToSell, remainingInLot);
+                const holdingDays = (sale.soldAt - lot.addedAt) / (1000 * 60 * 60 * 24);
+
+                if (holdingDays >= 0) {
+                    totalHoldingDays += holdingDays * amountFromThisLot;
+                    totalSalesWithDates += amountFromThisLot;
+                }
+
+                remainingToSell -= amountFromThisLot;
+                remainingInLot -= amountFromThisLot;
+
+                if (remainingInLot <= 0) {
+                    lotIndex++;
+                    remainingInLot = allLots[lotIndex]?.amount || 0;
+                }
+            }
+        });
+    });
+
+    const averageDays = totalSalesWithDates > 0 ? Math.round(totalHoldingDays / totalSalesWithDates) : 0;
+
+    return {
+        averageDays,
+        totalSalesWithDates
+    };
+};
