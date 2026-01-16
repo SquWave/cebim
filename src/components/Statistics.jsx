@@ -7,7 +7,7 @@ import RealizedPLTrend from './stats/RealizedPLTrend';
 import AssetAllocationChart from './stats/AssetAllocationChart';
 import AssetPerformanceCards from './stats/AssetPerformanceCards';
 
-const Statistics = ({ transactions = [], accounts = [], categories = [], assets = [], marketData = {}, privacyMode = false }) => {
+const Statistics = ({ transactions = [], accounts = [], categories = [], assets = [], marketData = {}, privacyMode = false, showWithholdingTax = false }) => {
     const [activeTab, setActiveTab] = useState('wallet'); // 'wallet' or 'portfolio'
 
     return (
@@ -42,10 +42,10 @@ const Statistics = ({ transactions = [], accounts = [], categories = [], assets 
                 ) : (
                     <div className="space-y-6">
                         <PortfolioSummary assets={assets} marketData={marketData} privacyMode={privacyMode} />
-                        <RealizedPLSummary assets={assets} privacyMode={privacyMode} />
+                        <RealizedPLSummary assets={assets} privacyMode={privacyMode} showWithholdingTax={showWithholdingTax} />
                         <RealizedPLTrend assets={assets} privacyMode={privacyMode} />
                         <AssetAllocationChart assets={assets} marketData={marketData} privacyMode={privacyMode} />
-                        <AssetPerformanceCards assets={assets} marketData={marketData} privacyMode={privacyMode} />
+                        <AssetPerformanceCards assets={assets} marketData={marketData} privacyMode={privacyMode} showWithholdingTax={showWithholdingTax} />
                     </div>
                 )}
             </div>

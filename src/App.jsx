@@ -14,6 +14,10 @@ import { DEFAULT_INCOME_CATEGORIES, DEFAULT_EXPENSE_CATEGORIES } from './data/de
 const AuthenticatedApp = () => {
   const [activeTab, setActiveTab] = useState('dashboard'); // 'dashboard', 'portfolio', 'wallet', 'statistics', 'settings'
   const [privacyMode, setPrivacyMode] = useState(false); // Hide all balances when true
+  const [showWithholdingTax, setShowWithholdingTax] = useState(() => {
+    const saved = localStorage.getItem('showWithholdingTax');
+    return saved === 'true';
+  });
   const { user } = useAuth();
 
   // Firestore Hooks
@@ -66,9 +70,9 @@ const AuthenticatedApp = () => {
       case 'portfolio':
         return <Portfolio assets={assets} onAddAsset={addAsset} onUpdateAsset={updateAsset} onDeleteAsset={removeAsset} privacyMode={privacyMode} />;
       case 'settings':
-        return <Settings />;
+        return <Settings showWithholdingTax={showWithholdingTax} setShowWithholdingTax={setShowWithholdingTax} />;
       case 'statistics':
-        return <Statistics transactions={transactions} accounts={accounts} categories={categories} assets={assets} marketData={marketData} privacyMode={privacyMode} />;
+        return <Statistics transactions={transactions} accounts={accounts} categories={categories} assets={assets} marketData={marketData} privacyMode={privacyMode} showWithholdingTax={showWithholdingTax} />;
       default:
         return <Dashboard transactions={transactions} assets={assets} marketData={marketData} privacyMode={privacyMode} />;
     }

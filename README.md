@@ -1,40 +1,46 @@
 # Cebim (myPocket) 📱💸
 
-**Cebim**, kişisel finans ve yatırım takibini tek bir yerde birleştiren, gizlilik odaklı ve kullanıcı dostu bir web uygulamasıdır.
+**Cebim**, kişisel finans ve yatırım takibini tek yerde birleştiren, gizlilik odaklı ve kullanıcı dostu PWA uygulamasıdır.
 
 <img width="1920" height="1200" alt="Screenshot_1" src="https://github.com/user-attachments/assets/3c0f3ac3-0d89-4411-8264-4c4431f7b299" />
 
 ## 🌟 Özellikler
 
+### 🔐 Giriş & Güvenlik
 *   **Anahtarlı Giriş:** Üyelik derdi yok! Sistem tarafından üretilen "Gizli Anahtar" ile her yerden verilerinize ulaşın.
 *   **QR Kod ile Giriş:** Uzun anahtarları yazmakla uğraşmayın! Mobil cihazınızdan QR kodu taratarak saniyeler içinde giriş yapın.
-*   **Gizlilik Modu:** Bakiyelerinizi meraklı gözlerden koruyun! Sağ üstteki göz ikonuna tıklayarak tüm bakiye ve tutarları anında gizleyin. Toplu taşımada, ofiste veya kamusal alanlarda finansal verileriniz güvende kalır.
-*   **Canlı Piyasa Verileri:** BIST hisse senetleri, yatırım fonları, döviz kurları ve gram altın fiyatlarını anlık olarak takip edin. Otomatik güncelleme sayesinde portföyünüz her zaman güncel kalır.
-*   **Kâr/Zarar Analizi:** Varlıklarınızın maliyet ve güncel değerini karşılaştırarak net kâr/zarar durumunuzu görüntüleyin.
-*   **Bulut Senkronizasyon:** Verileriniz Firebase Firestore üzerinde güvenle saklanır. Telefonunuzda girdiğiniz veri anında bilgisayarınızda görünür.
-*   **Hibrit Dashboard:** Nakit ve yatırım varlıklarınızı tek bir ekranda, net varlık olarak görüntüleyin.
-*   **Cüzdan Yönetimi:**
-    *   **Çoklu Hesap:** Nakit, Banka, Kredi Kartı gibi farklı hesaplar oluşturun ve yönetin.
-    *   **Detaylı Takip:** Gelir ve giderlerinizi kategorize edin, hesap bazlı bakiyelerinizi görün.
-    *   **Kategori Sistemi:** Harcamalarınızı ana ve alt kategorilerle detaylıca sınıflandırın.
-*   **Yatırım Portföyü:**
-    *   **Detaylı Takip:** Hisse senedi, fon, altın ve döviz varlıklarınızı "lot" bazlı kaydedin.
-    *   **Gerçek Maliyet:** Ortalama maliyet ve kâr/zarar durumunuz, tüm alım satım geçmişiniz baz alınarak kuruşu kuruşuna hesaplanır.
-    *   **Varlık Dağılımı:** Portföyünüzün hangi varlıklardan oluştuğunu yüzdelik dilimlerle pasta grafiğinde görün.
-*   **Gelişmiş Grafikler ve Analiz:**
-    *   **İnteraktif Pasta Grafik:** Harcamalarınızı kategorilere göre inceleyin. Dilimlere tıklayarak alt kategorilere inin ve detaylı analiz yapın.
-    *   **Akıllı Tarih Filtreleri:** Tarih filtreleri ile harcamalarınızı esnek bir şekilde analiz edin.
-    *   **Nakit Akışı Eğilimi:** Gelir, gider ve net durumunuzu karşılaştırmalı olarak izleyin. Trend çizgisi ile nakit akışınızın yönünü pürüzsüz bir eğriyle takip edin.
-    *   **Detaylı Rapor:** Gelir ve giderlerinizi tek bir tıkla değiştirerek ayrı ayrı raporlayın. Kategorilere göre detaylı döküm alın.
+*   **Gizlilik Modu:** Bakiyelerinizi meraklı gözlerden koruyun! Sağ üstteki göz ikonuna tıklayarak tüm bakiye ve tutarları anında gizleyin.
+
+### 💵 Cüzdan Yönetimi
+*   **Çoklu Hesap:** Nakit, Banka, Kredi Kartı gibi farklı hesaplar oluşturun ve yönetin.
+*   **Detaylı Takip:** Gelir ve giderlerinizi kategorize edin, hesap bazlı bakiyelerinizi görün.
+*   **Kategori Sistemi:** Harcamalarınızı ana ve alt kategorilerle detaylıca sınıflandırın.
+*   **Gelişmiş Filtreleme:** İşlemlerinizi hesap, kategori ve tarih aralığına göre filtreleyin.
+
+### 📈 Yatırım Portföyü
+*   **Desteklenen Varlıklar:** Hisse senedi, yatırım fonu, gram altın/gümüş ve döviz.
+*   **Lot Bazlı Takip:** Her alım ayrı kayıt olarak tutulur, FIFO maliyet hesabı yapılır.
+*   **Kâr/Zarar Analizi:** Gerçekleşmiş ve gerçekleşmemiş kar/zarar durumunuz ayrı ayrı hesaplanır.
+
+### 📊 Analiz & İstatistikler
+
+| Cüzdan Analizi | Portföy Performansı |
+|----------------|---------------------|
+| Harcama dağılımı (interaktif pasta grafik) | Gerçekleşmiş kar/zarar |
+| Nakit akışı trendi | Aylık kar/zarar grafiği |
+| Detaylı gelir/gider raporu | Varlık bazlı performans (aktif/satılmış) |
+| Tarih bazlı filtreleme | Ortalama tutma süresi (FIFO) |
+
+### ⚙️ Tercihler
+*   **Stopaj Vergisi:** Yatırım fonlarındaki %17.5 stopaj kesintisini hesapla (opsiyonel).
+*   **Bulut Senkronizasyon:** Verileriniz Firebase Firestore üzerinde güvenle saklanır.
 *   **PWA Desteği:** Mobil cihazınıza uygulama olarak kurabilir ve tam ekran deneyimiyle kullanabilirsiniz.
 
 ## 🚀 Kurulum ve Çalıştırma
 
-Bu projeyi kendi bilgisayarınızda çalıştırmak için aşağıdaki adımları izleyin:
-
 ### Gereksinimler
-*   [Node.js](https://nodejs.org/) (Sürüm 16 veya üzeri - Tercihen v20+)
-*   Firebase Projesi (Kendi veritabanınızı kullanmak için)
+*   [Node.js](https://nodejs.org/) (Sürüm 18 veya üzeri)
+*   Firebase Projesi
 
 ### Adımlar
 
@@ -62,9 +68,6 @@ Bu projeyi kendi bilgisayarınızda çalıştırmak için aşağıdaki adımlar�
         ```
 
 4.  **Uygulamayı Başlatın:**
-    
-    Bu proje, canlı verileri çekmek için yerel bir backend sunucusuna ihtiyaç duyar. Hem frontend hem de backend'i tek komutla başlatmak için:
-
     ```bash
     npm run dev:all
     ```
@@ -73,40 +76,29 @@ Bu projeyi kendi bilgisayarınızda çalıştırmak için aşağıdaki adımlar�
     *   **Backend:** `npm run server` (Port: 3001)
     *   **Frontend:** `npm run dev` (Port: 5173)
 
-    Terminalde çıkan linke (örn: `http://localhost:5173`) tıklayarak uygulamayı açın.
-
 ## 📱 Mobil Kurulum (PWA)
 
 1.  Uygulamayı telefonunuzun tarayıcısında açın.
-2.  Tarayıcı menüsünden **"Ana Ekrana Ekle"** (Add to Home Screen) seçeneğine tıklayın.
+2.  Tarayıcı menüsünden **"Ana Ekrana Ekle"** seçeneğine tıklayın.
 3.  Artık Cebim'i native bir uygulama gibi kullanabilirsiniz!
 
 ## 🛠️ Teknolojiler
 
-### Frontend
-*   **React** (Vite ile)
-*   **Tailwind CSS** (Tasarım)
-*   **Lucide React** (İkonlar)
-*   **Recharts** (Gelişmiş Grafikler)
-*   **QR Code & Scanner** (Hızlı Giriş)
-
-### Backend & Veri
-*   **Node.js + Express** (Backend Proxy Sunucusu)
-*   **Midas API** (Canlı Borsa, Döviz ve Altın Verileri)
-*   **Firebase Firestore** (Bulut Veritabanı & Senkronizasyon)
+| Frontend | Backend & Veri |
+|----------|---------------|
+| React 19 + Vite | Node.js + Express |
+| Tailwind CSS | Firebase Firestore |
+| Recharts | Midas API (BIST, döviz) |
+| Lucide React | TEFAS (fon fiyatları) |
 
 ## 🔒 Güvenlik ve Gizlilik
 
-Bu proje **"Sistem Tarafından Üretilen Güvenli Anahtar"** yöntemiyle çalışır.
-*   **Kayıt:** Sistem size özel, 24 karakterli, kırılması imkansız rastgele bir anahtar üretir.
+*   **Kayıt:** Sistem size özel, 24 karakterli rastgele bir anahtar üretir.
 *   **Giriş:** Bu anahtarı kullanarak veya QR kodu taratarak istediğiniz cihazdan verilerinize erişirsiniz.
 *   **Anonimlik:** E-posta, telefon veya isim vermenize gerek yoktur.
-*   **Veri:** Verileriniz Google Firebase altyapısında, sadece anahtar sahibinin erişebileceği şekilde saklanır.
-*   **Gizlilik Modu:** Uygulamada göz ikonuna tıklayarak tüm bakiye ve tutar bilgilerinizi `₺***` ile maskeleyebilirsiniz. Bu özellik, kamusal alanlarda finansal verilerinizin başkaları tarafından görülmesini engeller.
+*   **Gizlilik Modu:** Tüm bakiye ve tutar bilgilerinizi `₺***` ile maskeleyebilirsiniz.
 
 > **ÖNEMLİ:** Anahtarınızı kaybederseniz verilerinizi kurtarmanın bir yolu yoktur. Lütfen anahtarınızı güvenli bir yere kaydedin.
-
-> **KAMERA ERİŞİMİ NOTU:** QR Kod ile giriş özelliği, mobil tarayıcıların güvenlik politikaları gereği sadece **HTTPS** (Güvenli Bağlantı) veya **localhost** üzerinde çalışır. Yerel ağ (IP adresi) üzerinden yapılan testlerde kamera açılmayabilir. Uygulama yayına alındığında bu sorun ortadan kalkacaktır.
 
 ---
 *Not: Bu proje bir vibe coding (yapay zeka) projesidir. Öğrenim amaçlı yapılmıştır. Herhangi bir yatırım tavsiyesi içermemektedir.*

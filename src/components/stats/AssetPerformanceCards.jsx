@@ -3,7 +3,7 @@ import { ChevronDown, ChevronRight, TrendingUp, TrendingDown } from 'lucide-reac
 import { computeRealizedPL, getCategoryLabel } from '../../utils/assetHelpers';
 import { formatCurrency } from '../../utils/formatters';
 
-const AssetPerformanceCards = ({ assets = [], marketData = {}, privacyMode = false }) => {
+const AssetPerformanceCards = ({ assets = [], marketData = {}, privacyMode = false, showWithholdingTax = false }) => {
     const [expandedClass, setExpandedClass] = useState(null);
     const [viewMode, setViewMode] = useState('active'); // 'active' or 'sold'
 

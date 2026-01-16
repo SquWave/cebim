@@ -1,9 +1,9 @@
 import React, { useMemo } from 'react';
-import { TrendingUp, TrendingDown, Receipt, Target, CircleDollarSign, Percent, Clock } from 'lucide-react';
+import { TrendingUp, TrendingDown, Receipt, Target, CircleDollarSign, Percent, Clock, Minus } from 'lucide-react';
 import { formatCurrency } from '../../utils/formatters';
 import { computeRealizedPL, computeAverageHoldingPeriod } from '../../utils/assetHelpers';
 
-const RealizedPLSummary = ({ assets = [], privacyMode = false }) => {
+const RealizedPLSummary = ({ assets = [], privacyMode = false, showWithholdingTax = false }) => {
 
     const stats = useMemo(() => {
         return computeRealizedPL(assets);
@@ -12,6 +12,23 @@ const RealizedPLSummary = ({ assets = [], privacyMode = false }) => {
     const holdingStats = useMemo(() => {
         return computeAverageHoldingPeriod(assets);
     }, [assets]);
+
+    // Calculate withholding tax (only for funds with profit)
+    const taxStats = useMemo(() => {
+        if (!showWithholdingTax) return { totalTax: 0, netProfit: stats.totalProfit };
+
+        let totalTax = 0;
+        Object.values(stats.salesByAsset).forEach(assetData => {
+            if (assetData.type === 'fund' && assetData.totalProfit > 0) {
+                totalTax += assetData.totalProfit * 0.175;
+            }
+        });
+
+        return {
+            totalTax,
+            netProfit: stats.totalProfit - totalTax
+        };
+    }, [stats, showWithholdingTax]);
 
     // Don't render if no sales
     if (stats.totalSaleCount === 0) {
@@ -52,13 +69,15 @@ const RealizedPLSummary = ({ assets = [], privacyMode = false }) => {
                     </div>
                 </div>
 
-                {/* Realized P/L */}
+                {/* Realized P/L (Gross) */}
                 <div className="bg-slate-900/50 p-4 rounded-xl border border-slate-700/50 flex items-center justify-between">
                     <div className="flex items-center gap-3">
                         <div className={`p-2 rounded-lg ${stats.totalProfit >= 0 ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'}`}>
                             {stats.totalProfit >= 0 ? <TrendingUp className="w-5 h-5" /> : <TrendingDown className="w-5 h-5" />}
                         </div>
-                        <span className="text-slate-300 font-medium">Gerçekleşmiş Kar/Zarar</span>
+                        <span className="text-slate-300 font-medium">
+                            {showWithholdingTax ? 'Brüt Kar/Zarar' : 'Gerçekleşmiş Kar/Zarar'}
+                        </span>
                     </div>
                     <div className="text-right">
                         <div className={`text-xl font-bold ${stats.totalProfit >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
@@ -69,6 +88,38 @@ const RealizedPLSummary = ({ assets = [], privacyMode = false }) => {
                         </div>
                     </div>
                 </div>
+
+                {/* Withholding Tax (if enabled and has tax) */}
+                {showWithholdingTax && taxStats.totalTax > 0 && (
+                    <>
+                        <div className="bg-slate-900/50 p-4 rounded-xl border border-amber-500/30 flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 bg-amber-500/20 rounded-lg text-amber-400">
+                                    <Minus className="w-5 h-5" />
+                                </div>
+                                <div>
+                                    <span className="text-slate-300 font-medium">Stopaj Vergisi</span>
+                                    <div className="text-xs text-slate-500">Fonlardan %17.5</div>
+                                </div>
+                            </div>
+                            <div className="text-xl font-bold text-amber-400">
+                                {privacyMode ? '₺***' : `-${formatCurrency(taxStats.totalTax)}`}
+                            </div>
+                        </div>
+
+                        <div className="bg-slate-900/50 p-4 rounded-xl border border-emerald-500/30 flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <div className={`p-2 rounded-lg ${taxStats.netProfit >= 0 ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'}`}>
+                                    {taxStats.netProfit >= 0 ? <TrendingUp className="w-5 h-5" /> : <TrendingDown className="w-5 h-5" />}
+                                </div>
+                                <span className="text-slate-300 font-medium">Net Kar/Zarar</span>
+                            </div>
+                            <div className={`text-xl font-bold ${taxStats.netProfit >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                {privacyMode ? '₺***' : `${taxStats.netProfit >= 0 ? '+' : ''}${formatCurrency(taxStats.netProfit)}`}
+                            </div>
+                        </div>
+                    </>
+                )}
 
                 {/* Stats Row */}
                 <div className="grid grid-cols-2 gap-3">

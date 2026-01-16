@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
-import { Eye, EyeOff, Copy, Check, ShieldAlert, QrCode } from 'lucide-react';
+import { Eye, EyeOff, Copy, Check, ShieldAlert, QrCode, Receipt } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
-const Settings = () => {
+const Settings = ({ showWithholdingTax = false, setShowWithholdingTax }) => {
     const { user, logout } = useAuth();
     const [showKey, setShowKey] = useState(false);
     const [showQR, setShowQR] = useState(false);
@@ -37,6 +37,12 @@ const Settings = () => {
         } else {
             setShowQR(false);
         }
+    };
+
+    const handleWithholdingTaxToggle = () => {
+        const newValue = !showWithholdingTax;
+        setShowWithholdingTax(newValue);
+        localStorage.setItem('showWithholdingTax', String(newValue));
     };
 
     return (
@@ -122,8 +128,41 @@ const Settings = () => {
                 </div>
             </div>
 
+            {/* Preferences Section */}
+            <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 space-y-4">
+                <div className="flex items-center gap-3 mb-2">
+                    <div className="p-2 bg-amber-500/10 rounded-lg">
+                        <Receipt className="h-6 w-6 text-amber-500" />
+                    </div>
+                    <div>
+                        <h3 className="text-lg font-medium text-white">Tercihler</h3>
+                        <p className="text-slate-400 text-xs">Uygulama ayarları ve hesaplama tercihleri</p>
+                    </div>
+                </div>
+
+                {/* Withholding Tax Toggle */}
+                <div className="flex items-center justify-between p-4 bg-slate-950 rounded-lg border border-slate-800">
+                    <div>
+                        <div className="text-sm font-medium text-white">Stopaj Vergisi Göster</div>
+                        <div className="text-xs text-slate-400 mt-0.5">
+                            Yatırım fonlarındaki stopaj kesintisini hesapla
+                        </div>
+                    </div>
+                    <button
+                        onClick={handleWithholdingTaxToggle}
+                        className={`relative w-12 h-6 rounded-full transition-colors ${showWithholdingTax ? 'bg-indigo-600' : 'bg-slate-700'
+                            }`}
+                    >
+                        <span
+                            className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform ${showWithholdingTax ? 'left-7' : 'left-1'
+                                }`}
+                        />
+                    </button>
+                </div>
+            </div>
+
             <div className="text-center text-xs text-slate-600 mt-8">
-                Cebim v1.6.3 • Güvenli Bağlantı
+                Cebim v1.6.5 • Güvenli Bağlantı
             </div>
 
             <div className="mt-8">
