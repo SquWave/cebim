@@ -82,12 +82,47 @@ export const usePortfolioOperations = ({ onUpdateAsset, onDeleteAsset }) => {
         if (!confirm("Bu alım kaydını silmek istediğinize emin misiniz?")) return;
 
         try {
+            // Update flat lots array
             const updatedLots = asset.lots.filter(lot => lot.id !== lotId);
 
-            if (updatedLots.length === 0) {
+            // Also remove from periods if they exist
+            let updatedPeriods = asset.periods;
+            if (asset.periods && asset.periods.length > 0) {
+                updatedPeriods = asset.periods.map(period => ({
+                    ...period,
+                    lots: (period.lots || []).filter(lot => lot.id !== lotId)
+                }));
+
+                // Check if we need to remove empty periods or periods with no lots/sales
+                // For now, let's keep the structure simple and just remove the lot
+            }
+
+            // Check if any lots remain across the entire asset (check both flat lots and periods)
+            const hasLotsInPeriods = updatedPeriods 
+                ? updatedPeriods.some(p => p.lots && p.lots.length > 0) 
+                : false;
+            
+            const hasRemainingLots = updatedLots.length > 0 || hasLotsInPeriods;
+
+            if (!hasRemainingLots) {
+                // If absolutely no lots remain anywhere, delete the asset
                 await onDeleteAsset(asset.id);
             } else {
-                await onUpdateAsset({ ...asset, lots: updatedLots });
+                // Otherwise update with removed lot
+                const updateData = {
+                    ...asset,
+                    lots: updatedLots
+                };
+                
+                if (updatedPeriods) {
+                    updateData.periods = updatedPeriods;
+                    
+                    // If we removed a lot from the current period, ensure consistency
+                    // Recalculate currentPeriodId if needed, but usually just updating lots is enough
+                    // as computeAggregatedValues will use the updated lots in the active period
+                }
+
+                await onUpdateAsset(updateData);
             }
         } catch (error) {
             console.error("Error deleting lot:", error);

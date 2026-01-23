@@ -789,6 +789,16 @@ const Portfolio = ({ assets, onAddAsset, onUpdateAsset, onDeleteAsset, privacyMo
                 assets={assets}
                 isOpen={showTransactionHistory}
                 onClose={() => setShowTransactionHistory(false)}
+                onDeleteTransaction={(tx) => {
+                    const asset = assets.find(a => a.id === tx.assetId);
+                    if (!asset) return;
+
+                    if (tx.type === 'buy') {
+                        handleDeleteLot(asset, tx.id);
+                    } else if (tx.type === 'sell') {
+                        handleDeleteSale(asset, tx.id);
+                    }
+                }}
             />
         </div>
     );

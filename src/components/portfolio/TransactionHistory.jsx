@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { X, TrendingUp, TrendingDown, Filter, Calendar, ArrowUpRight, ArrowDownRight } from 'lucide-react';
+import { X, TrendingUp, TrendingDown, Filter, Calendar, ArrowUpRight, ArrowDownRight, Trash2 } from 'lucide-react';
 import { getAllTransactions, formatTransactionDate, categoryConfig } from '../../utils/assetHelpers';
 import { formatCurrency } from '../../utils/formatters';
 
@@ -7,7 +7,7 @@ import { formatCurrency } from '../../utils/formatters';
  * Transaction History Modal
  * Shows all buy/sell transactions across all assets with filtering
  */
-const TransactionHistory = ({ assets = [], isOpen, onClose }) => {
+const TransactionHistory = ({ assets = [], isOpen, onClose, onDeleteTransaction }) => {
     // Filter state
     const [filterType, setFilterType] = useState('all'); // 'all', 'buy', 'sell'
     const [filterAssetType, setFilterAssetType] = useState('all'); // 'all', 'stock', 'fund', 'gold', 'currency'
@@ -164,7 +164,7 @@ const TransactionHistory = ({ assets = [], isOpen, onClose }) => {
                         filteredTransactions.map((tx, index) => (
                             <div
                                 key={`${tx.id}-${index}`}
-                                className="bg-slate-800/50 rounded-lg p-3 border border-slate-700/50"
+                                className="bg-slate-800/50 rounded-lg p-3 border border-slate-700/50 group"
                             >
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-3">
@@ -195,17 +195,34 @@ const TransactionHistory = ({ assets = [], isOpen, onClose }) => {
                                         </div>
                                     </div>
 
-                                    <div className="text-right">
-                                        <div className="font-semibold text-white">
-                                            {formatCurrency(tx.total)}
-                                        </div>
-                                        <div className="text-xs text-slate-500">
-                                            {formatTransactionDate(tx.date)}
-                                        </div>
-                                        {tx.type === 'sell' && tx.profit !== undefined && (
-                                            <div className={`text-xs ${tx.profit >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                                                {tx.profit >= 0 ? '+' : ''}{formatCurrency(tx.profit)}
+                                    <div className="flex items-center gap-3">
+                                        <div className="text-right">
+                                            <div className="font-semibold text-white">
+                                                {formatCurrency(tx.total)}
                                             </div>
+                                            <div className="text-xs text-slate-500">
+                                                {formatTransactionDate(tx.date)}
+                                            </div>
+                                            {tx.type === 'sell' && tx.profit !== undefined && (
+                                                <div className={`text-xs ${tx.profit >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                                    {tx.profit >= 0 ? '+' : ''}{formatCurrency(tx.profit)}
+                                                </div>
+                                            )}
+                                        </div>
+                                        {onDeleteTransaction && (
+                                            <button
+                                                onClick={() => {
+                                                    // Doğrudan prop fonksiyonunu çağırıyoruz, confirm burada da yaptırılabilir
+                                                    // ama Portfolio.jsx içindeki delete fonksiyonları zaten confirm içeriyor.
+                                                    // Yine de burada bir ön kontrol yapabiliriz veya direkt çağırabiliriz.
+                                                    // handleDeleteLot/Sale kendi içinde confirm yapıyor.
+                                                    onDeleteTransaction(tx);
+                                                }}
+                                                className="p-2 text-slate-500 hover:text-rose-500 hover:bg-rose-500/10 rounded-lg transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100"
+                                                title="İşlemi Sil"
+                                            >
+                                                <Trash2 className="w-4 h-4" />
+                                            </button>
                                         )}
                                     </div>
                                 </div>

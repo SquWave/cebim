@@ -1,17 +1,28 @@
 # Active Context
 
 ## Current Focus
-- **Phase 1: Keyed Synchronization & Cloud (V1.1)**
-- Implementing "Secret Key" authentication (SHA-256 hashing).
-- Migrating data persistence from `localStorage` to **Firebase Firestore**.
-- Enabling real-time synchronization between devices.
+- **Maintenance & Optimization**:
+    - Dependency updates (React 19, Firebase 12).
+    - Bug fixes (Asset cost calculation, Mobile inputs).
+    - Code quality improvements (Refactoring, Transaction History cleanup).
 
 ## Recent Changes
-- Completed MVP (Local-First, PWA).
-- Removed personal roadmap files from Git tracking.
+- **Features Added**:
+    - **Withholding Tax**: Optional 17.5% tax calculation for funds.
+    - **Silver Support**: Added 'Gram Gümüş' and other precious metals.
+    - **Transaction History**: Added manual delete capability for fixing data anomalies.
+    - **Statistics**: Monthly P/L trends, Average holding period.
+- **Documentation**:
+    - Updated `README.md` with current feature set.
+    - Updated `Memory Bank` to reflect current project state.
 
 ## Next Steps
-- Set up Firebase project and Firestore database.
-- Implement `AuthContext` to manage the secret key and user session.
-- Create a "Login" screen for entering the secret key.
-- Refactor `useLocalStorage` to `useFirestore` (or similar hook) for data syncing.
+- Monitor user feedback on new tax features.
+- Potential future upgrades:
+    - Tailwind CSS v4 migration (currently held back).
+    - Advanced portfolio analytics.
+    - Multi-currency deep support.
+
+## Active Decisions
+- **Dependencies**: Decided to stick with Tailwind v3.4 for now to avoid major migration overhead while updating all other packages to latest.
+- **Data Consistency**: Implemented "period-aware" deletion to ensure cost basis remains accurate when removing transactions.
