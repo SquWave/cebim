@@ -28,7 +28,8 @@ const SpendingDistributionWidget = ({ transactions = [], categories = [], privac
 
         return transactions.filter(t => {
             const txDate = new Date(t.date);
-            return t.type === 'expense' && txDate >= thirtyDaysAgo && txDate <= today;
+            // Exclude "Kredi Kartı Ödemesi" to avoid double counting
+            return t.type === 'expense' && t.category !== 'Kredi Kartı Ödemesi' && txDate >= thirtyDaysAgo && txDate <= today;
         });
     }, [transactions]);
 

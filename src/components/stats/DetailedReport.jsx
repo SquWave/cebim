@@ -8,7 +8,11 @@ const DetailedReport = ({ transactions = [], categories = [], privacyMode = fals
     const [reportType, setReportType] = useState('expense'); // 'expense' | 'income'
 
     const data = useMemo(() => {
-        const filteredTx = transactions.filter(t => t.type === reportType);
+        // Exclude "Kredi Kartı Ödemesi" from expense reports to avoid double counting
+        const filteredTx = transactions.filter(t =>
+            t.type === reportType &&
+            !(reportType === 'expense' && t.category === 'Kredi Kartı Ödemesi')
+        );
         const catMap = {};
 
         filteredTx.forEach(t => {

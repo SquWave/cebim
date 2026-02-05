@@ -20,7 +20,10 @@ const Wallet = ({ transactions = [], onAddTransaction, onUpdateTransaction, onDe
     const [accountName, setAccountName] = useState('');
     const [initialBalance, setInitialBalance] = useState('');
     const [accountType, setAccountType] = useState('cash');
+    const [creditLimit, setCreditLimit] = useState('');
+    const [statementDay, setStatementDay] = useState('1');
     const [editingAccount, setEditingAccount] = useState(null);
+    const [selectedCreditCard, setSelectedCreditCard] = useState(null); // For period history modal
 
     // Filter State
     const [showFilters, setShowFilters] = useState(false);
@@ -32,14 +35,117 @@ const Wallet = ({ transactions = [], onAddTransaction, onUpdateTransaction, onDe
     // Ensure transactions is an array
     const safeTransactions = transactions || [];
 
+    // Helper: Get current period start date for credit cards
+    const getCurrentPeriodStart = (statementDay) => {
+        const today = new Date();
+        const currentMonth = today.getMonth();
+        const currentYear = today.getFullYear();
+        const day = parseInt(statementDay) || 1;
+
+        // Get the last day of current month
+        const lastDayOfCurrentMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+        const actualDay = Math.min(day, lastDayOfCurrentMonth);
+
+        // If we haven't passed the statement day this month, use last month's statement day
+        let periodStart;
+        if (today.getDate() < actualDay) {
+            // Use previous month's statement day
+            const prevMonth = currentMonth === 0 ? 11 : currentMonth - 1;
+            const prevYear = currentMonth === 0 ? currentYear - 1 : currentYear;
+            const lastDayOfPrevMonth = new Date(prevYear, prevMonth + 1, 0).getDate();
+            const prevActualDay = Math.min(day, lastDayOfPrevMonth);
+            periodStart = new Date(prevYear, prevMonth, prevActualDay, 0, 0, 0, 0);
+        } else {
+            // Use this month's statement day
+            periodStart = new Date(currentYear, currentMonth, actualDay, 0, 0, 0, 0);
+        }
+        return periodStart;
+    };
+
+    // Helper: Get previous periods for credit card history
+    const getCreditCardPeriods = (acc) => {
+        if (acc.type !== 'credit_card') return [];
+
+        const periods = [];
+        const today = new Date();
+        const statementDay = parseInt(acc.statementDay) || 1;
+
+        // Get transactions for this card
+        const cardTransactions = safeTransactions.filter(t => t.accountId === acc.id && t.type === 'expense');
+        if (cardTransactions.length === 0) return [];
+
+        // Find the earliest transaction date
+        const dates = cardTransactions.map(t => new Date(t.date));
+        const earliest = new Date(Math.min(...dates));
+
+        // Generate periods from earliest to now
+        let periodEnd = new Date(today);
+        let periodStart = getCurrentPeriodStart(statementDay);
+
+        // Current period
+        const currentPeriodExpenses = cardTransactions
+            .filter(t => new Date(t.date) >= periodStart && new Date(t.date) <= periodEnd)
+            .reduce((sum, t) => sum + Number(t.amount), 0);
+
+        periods.push({
+            label: 'Bu Dönem',
+            start: periodStart,
+            end: periodEnd,
+            total: currentPeriodExpenses,
+            transactions: cardTransactions.filter(t => new Date(t.date) >= periodStart && new Date(t.date) <= periodEnd)
+        });
+
+        // Previous periods (up to 6 months back)
+        for (let i = 0; i < 6; i++) {
+            periodEnd = new Date(periodStart);
+            periodEnd.setMilliseconds(-1); // End of previous period
+
+            const prevMonth = periodStart.getMonth() === 0 ? 11 : periodStart.getMonth() - 1;
+            const prevYear = periodStart.getMonth() === 0 ? periodStart.getFullYear() - 1 : periodStart.getFullYear();
+            const lastDayOfMonth = new Date(prevYear, prevMonth + 1, 0).getDate();
+            const actualDay = Math.min(statementDay, lastDayOfMonth);
+            periodStart = new Date(prevYear, prevMonth, actualDay, 0, 0, 0, 0);
+
+            if (periodStart < earliest) break;
+
+            const periodExpenses = cardTransactions
+                .filter(t => new Date(t.date) >= periodStart && new Date(t.date) <= periodEnd)
+                .reduce((sum, t) => sum + Number(t.amount), 0);
+
+            if (periodExpenses > 0) {
+                periods.push({
+                    label: periodStart.toLocaleDateString('tr-TR', { month: 'long', year: 'numeric' }),
+                    start: periodStart,
+                    end: periodEnd,
+                    total: periodExpenses,
+                    transactions: cardTransactions.filter(t => new Date(t.date) >= periodStart && new Date(t.date) <= periodEnd)
+                });
+            }
+        }
+
+        return periods;
+    };
+
     // Derived State
     const accountBalances = useMemo(() => {
         const balances = {};
         accounts.forEach(acc => {
-            balances[acc.id] = Number(acc.initialBalance) || 0;
+            if (acc.type === 'credit_card') {
+                // Credit card: limit - current period expenses
+                const periodStart = getCurrentPeriodStart(acc.statementDay || 1);
+                const periodExpenses = safeTransactions
+                    .filter(t => t.accountId === acc.id && t.type === 'expense')
+                    .filter(t => new Date(t.date) >= periodStart)
+                    .reduce((sum, t) => sum + Number(t.amount), 0);
+                balances[acc.id] = (Number(acc.creditLimit) || 0) - periodExpenses;
+            } else {
+                // Regular account: initial balance +/- transactions
+                balances[acc.id] = Number(acc.initialBalance) || 0;
+            }
         });
         safeTransactions.forEach(t => {
-            if (t.accountId && balances[t.accountId] !== undefined) {
+            const acc = accounts.find(a => a.id === t.accountId);
+            if (t.accountId && balances[t.accountId] !== undefined && (!acc || acc.type !== 'credit_card')) {
                 if (t.type === 'income') {
                     balances[t.accountId] += Number(t.amount);
                 } else if (t.type === 'expense') {
@@ -140,15 +246,33 @@ const Wallet = ({ transactions = [], onAddTransaction, onUpdateTransaction, onDe
         e.preventDefault();
         if (!accountName) return;
 
-        onAddAccount({
+        // Validate credit card specific fields
+        if (accountType === 'credit_card' && !creditLimit) {
+            alert('Kredi kartı için limit girmeniz zorunludur.');
+            return;
+        }
+
+        const accountData = {
             id: Date.now().toString(),
             name: accountName,
             type: accountType,
-            initialBalance: Number(initialBalance) || 0
-        });
+        };
 
+        if (accountType === 'credit_card') {
+            accountData.creditLimit = Number(creditLimit) || 0;
+            accountData.statementDay = parseInt(statementDay) || 1;
+            accountData.initialBalance = 0; // Credit cards don't have initial balance
+        } else {
+            accountData.initialBalance = Number(initialBalance) || 0;
+        }
+
+        onAddAccount(accountData);
+
+        // Reset form
         setAccountName('');
         setInitialBalance('');
+        setCreditLimit('');
+        setStatementDay('1');
         setAccountType('cash');
         setIsAddingAccount(false);
     };
@@ -161,10 +285,25 @@ const Wallet = ({ transactions = [], onAddTransaction, onUpdateTransaction, onDe
         e.preventDefault();
         if (!editingAccount || !editingAccount.name) return;
 
-        onUpdateAccount({
+        // Validate credit card specific fields
+        if (editingAccount.type === 'credit_card' && !editingAccount.creditLimit) {
+            alert('Kredi kartı için limit girmeniz zorunludur.');
+            return;
+        }
+
+        const updatedAccount = {
             ...editingAccount,
-            initialBalance: Number(editingAccount.initialBalance)
-        });
+        };
+
+        if (editingAccount.type === 'credit_card') {
+            updatedAccount.creditLimit = Number(editingAccount.creditLimit) || 0;
+            updatedAccount.statementDay = parseInt(editingAccount.statementDay) || 1;
+            updatedAccount.initialBalance = 0;
+        } else {
+            updatedAccount.initialBalance = Number(editingAccount.initialBalance) || 0;
+        }
+
+        onUpdateAccount(updatedAccount);
         setEditingAccount(null);
     };
 
@@ -199,6 +338,18 @@ const Wallet = ({ transactions = [], onAddTransaction, onUpdateTransaction, onDe
         if (type !== 'transfer' && !category) {
             alert("Lütfen bir kategori seçin.");
             return;
+        }
+
+        // Credit card limit check for expenses
+        if (type === 'expense') {
+            const selectedAccount = accounts.find(a => a.id === selectedAccountId);
+            if (selectedAccount && selectedAccount.type === 'credit_card') {
+                const remainingLimit = accountBalances[selectedAccountId] || 0;
+                if (numAmount > remainingLimit) {
+                    alert(`Kart limitiniz aşılıyor!\n\nKalan limit: ${new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(remainingLimit)}\nHarcama tutarı: ${new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(numAmount)}`);
+                    return;
+                }
+            }
         }
 
         onAddTransaction({
@@ -286,19 +437,46 @@ const Wallet = ({ transactions = [], onAddTransaction, onUpdateTransaction, onDe
                         </div>
                         <input
                             type="text"
-                            placeholder="Hesap Adı (Örn: Cüzdan, Maaş Kartı)"
+                            placeholder={accountType === 'credit_card' ? "Kart Adı (Örn: Akbank Kredi Kartı)" : "Hesap Adı (Örn: Cüzdan, Maaş Kartı)"}
                             value={accountName}
                             onChange={(e) => setAccountName(e.target.value)}
                             className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
                             required
                         />
-                        <input
-                            type="number"
-                            placeholder="Başlangıç Bakiyesi (Opsiyonel)"
-                            value={initialBalance}
-                            onChange={(e) => setInitialBalance(e.target.value)}
-                            className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
-                        />
+
+                        {accountType === 'credit_card' ? (
+                            <>
+                                <input
+                                    type="number"
+                                    placeholder="Kart Limiti (₺)"
+                                    value={creditLimit}
+                                    onChange={(e) => setCreditLimit(e.target.value)}
+                                    className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+                                    required
+                                />
+                                <div>
+                                    <label className="text-xs text-slate-400 block mb-1">Ekstre Kesim Günü</label>
+                                    <select
+                                        value={statementDay}
+                                        onChange={(e) => setStatementDay(e.target.value)}
+                                        className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-white focus:outline-none focus:border-indigo-500"
+                                    >
+                                        {[...Array(31)].map((_, i) => (
+                                            <option key={i + 1} value={i + 1}>Her ayın {i + 1}. günü</option>
+                                        ))}
+                                    </select>
+                                </div>
+                            </>
+                        ) : (
+                            <input
+                                type="number"
+                                placeholder="Başlangıç Bakiyesi (Opsiyonel)"
+                                value={initialBalance}
+                                onChange={(e) => setInitialBalance(e.target.value)}
+                                className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+                            />
+                        )}
+
                         <button type="submit" className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-3 rounded-lg transition-colors">Hesap Oluştur</button>
                     </div>
                 </form>
@@ -308,23 +486,52 @@ const Wallet = ({ transactions = [], onAddTransaction, onUpdateTransaction, onDe
             {editingAccount && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
                     <form onSubmit={handleSaveAccount} className="bg-slate-900 p-6 rounded-2xl w-full max-w-sm border border-slate-800">
-                        <h3 className="text-lg font-bold text-white mb-4">Hesabı Düzenle</h3>
+                        <h3 className="text-lg font-bold text-white mb-4">
+                            {editingAccount.type === 'credit_card' ? 'Kredi Kartını Düzenle' : 'Hesabı Düzenle'}
+                        </h3>
                         <div className="space-y-3">
                             <input
                                 type="text"
-                                placeholder="Hesap Adı"
+                                placeholder={editingAccount.type === 'credit_card' ? "Kart Adı" : "Hesap Adı"}
                                 value={editingAccount.name}
                                 onChange={(e) => setEditingAccount({ ...editingAccount, name: e.target.value })}
                                 className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-white focus:outline-none focus:border-indigo-500"
                                 required
                             />
-                            <input
-                                type="number"
-                                placeholder="Başlangıç Bakiyesi"
-                                value={editingAccount.initialBalance}
-                                onChange={(e) => setEditingAccount({ ...editingAccount, initialBalance: e.target.value })}
-                                className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-white focus:outline-none focus:border-indigo-500"
-                            />
+
+                            {editingAccount.type === 'credit_card' ? (
+                                <>
+                                    <input
+                                        type="number"
+                                        placeholder="Kart Limiti (₺)"
+                                        value={editingAccount.creditLimit || ''}
+                                        onChange={(e) => setEditingAccount({ ...editingAccount, creditLimit: e.target.value })}
+                                        className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-white focus:outline-none focus:border-indigo-500"
+                                        required
+                                    />
+                                    <div>
+                                        <label className="text-xs text-slate-400 block mb-1">Ekstre Kesim Günü</label>
+                                        <select
+                                            value={editingAccount.statementDay || 1}
+                                            onChange={(e) => setEditingAccount({ ...editingAccount, statementDay: e.target.value })}
+                                            className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-white focus:outline-none focus:border-indigo-500"
+                                        >
+                                            {[...Array(31)].map((_, i) => (
+                                                <option key={i + 1} value={i + 1}>Her ayın {i + 1}. günü</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                </>
+                            ) : (
+                                <input
+                                    type="number"
+                                    placeholder="Başlangıç Bakiyesi"
+                                    value={editingAccount.initialBalance}
+                                    onChange={(e) => setEditingAccount({ ...editingAccount, initialBalance: e.target.value })}
+                                    className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-white focus:outline-none focus:border-indigo-500"
+                                />
+                            )}
+
                             <div className="flex gap-2 mt-4">
                                 <button type="button" onClick={() => setEditingAccount(null)} className="flex-1 py-3 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition-colors">İptal</button>
                                 <button type="submit" className="flex-1 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors">Kaydet</button>
@@ -336,37 +543,151 @@ const Wallet = ({ transactions = [], onAddTransaction, onUpdateTransaction, onDe
 
             {/* Accounts List */}
             <div className="grid grid-cols-2 gap-3">
-                {accounts.map(acc => (
-                    <div key={acc.id} className="p-3 bg-slate-900 rounded-xl border border-slate-800 relative group">
-                        <div className="flex justify-between items-start mb-2">
-                            <div className={`p-2 rounded-lg ${acc.type === 'bank' ? 'bg-blue-500/10 text-blue-400' : acc.type === 'credit_card' ? 'bg-purple-500/10 text-purple-400' : 'bg-emerald-500/10 text-emerald-400'}`}>
-                                {getAccountIcon(acc.type)}
+                {accounts.map(acc => {
+                    const balance = accountBalances[acc.id] || 0;
+                    const isCreditCard = acc.type === 'credit_card';
+                    const creditLimit = Number(acc.creditLimit) || 0;
+                    const usedAmount = isCreditCard ? creditLimit - balance : 0;
+                    const usagePercent = isCreditCard && creditLimit > 0 ? Math.min((usedAmount / creditLimit) * 100, 100) : 0;
+
+                    return (
+                        <div
+                            key={acc.id}
+                            className={`p-3 bg-slate-900 rounded-xl border border-slate-800 relative group ${isCreditCard ? 'cursor-pointer hover:border-purple-500/50' : ''}`}
+                            onClick={isCreditCard ? () => setSelectedCreditCard(acc) : undefined}
+                        >
+                            <div className="flex justify-between items-start mb-2">
+                                <div className={`p-2 rounded-lg ${acc.type === 'bank' ? 'bg-blue-500/10 text-blue-400' : acc.type === 'credit_card' ? 'bg-purple-500/10 text-purple-400' : 'bg-emerald-500/10 text-emerald-400'}`}>
+                                    {getAccountIcon(acc.type)}
+                                </div>
+                                <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
+                                    <button onClick={() => handleEditAccount(acc)} className="text-slate-600 hover:text-indigo-400 transition-colors">
+                                        <Pencil className="w-4 h-4" />
+                                    </button>
+                                    <button onClick={() => {
+                                        if (confirm('Bu hesabı silmek istediğinize emin misiniz?')) {
+                                            onDeleteAccount(acc.id);
+                                        }
+                                    }} className="text-slate-600 hover:text-rose-500 transition-colors">
+                                        <Trash2 className="w-4 h-4" />
+                                    </button>
+                                </div>
                             </div>
-                            <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <button onClick={() => handleEditAccount(acc)} className="text-slate-600 hover:text-indigo-400 transition-colors">
-                                    <Pencil className="w-4 h-4" />
-                                </button>
-                                <button onClick={() => {
-                                    if (confirm('Bu hesabı silmek istediğinize emin misiniz?')) {
-                                        onDeleteAccount(acc.id);
-                                    }
-                                }} className="text-slate-600 hover:text-rose-500 transition-colors">
-                                    <Trash2 className="w-4 h-4" />
-                                </button>
-                            </div>
+                            <div className="font-medium text-white truncate">{acc.name}</div>
+
+                            {isCreditCard ? (
+                                <>
+                                    <div className="text-lg font-bold text-slate-200">
+                                        {privacyMode ? '₺***' : `${new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(balance)}`}
+                                    </div>
+                                    <div className="text-xs text-slate-500">
+                                        / {privacyMode ? '***' : new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(creditLimit)}
+                                    </div>
+                                    {/* Progress Bar */}
+                                    <div className="mt-2 h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                                        <div
+                                            className={`h-full rounded-full transition-all ${usagePercent > 80 ? 'bg-rose-500' : usagePercent > 50 ? 'bg-amber-500' : 'bg-purple-500'}`}
+                                            style={{ width: `${usagePercent}%` }}
+                                        />
+                                    </div>
+                                    <div className="flex justify-between items-center mt-1">
+                                        <span className="text-[10px] text-slate-500">
+                                            {privacyMode ? '**%' : `${usagePercent.toFixed(0)}%`} kullanıldı
+                                        </span>
+                                        <span className="text-[10px] text-slate-500">
+                                            Kesim: {acc.statementDay || 1}
+                                        </span>
+                                    </div>
+                                </>
+                            ) : (
+                                <div className="text-lg font-bold text-slate-200">
+                                    {privacyMode ? '₺***' : new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(balance)}
+                                </div>
+                            )}
                         </div>
-                        <div className="font-medium text-white truncate">{acc.name}</div>
-                        <div className="text-lg font-bold text-slate-200">
-                            {privacyMode ? '₺***' : new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(accountBalances[acc.id] || 0)}
-                        </div>
-                    </div>
-                ))}
+                    );
+                })}
                 {accounts.length === 0 && (
                     <div className="col-span-2 text-center py-4 text-slate-500 text-sm border border-dashed border-slate-800 rounded-xl">
                         Henüz hesap eklenmedi. "Hesap Ekle" butonu ile başlayın.
                     </div>
                 )}
             </div>
+
+            {/* Credit Card Period History Modal */}
+            {selectedCreditCard && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-slate-900 p-6 rounded-2xl w-full max-w-md border border-slate-800 max-h-[80vh] overflow-y-auto">
+                        <div className="flex justify-between items-center mb-4">
+                            <div>
+                                <h3 className="text-lg font-bold text-white">{selectedCreditCard.name}</h3>
+                                <p className="text-xs text-slate-500">Dönem Geçmişi</p>
+                            </div>
+                            <button
+                                onClick={() => setSelectedCreditCard(null)}
+                                className="text-slate-500 hover:text-white transition-colors"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        {/* Card Summary */}
+                        <div className="p-4 bg-slate-800/50 rounded-xl mb-4">
+                            <div className="flex justify-between items-center mb-2">
+                                <span className="text-slate-400 text-sm">Kart Limiti</span>
+                                <span className="text-white font-medium">
+                                    {privacyMode ? '₺***' : new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(selectedCreditCard.creditLimit || 0)}
+                                </span>
+                            </div>
+                            <div className="flex justify-between items-center mb-2">
+                                <span className="text-slate-400 text-sm">Kalan Limit</span>
+                                <span className="text-emerald-400 font-medium">
+                                    {privacyMode ? '₺***' : new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(accountBalances[selectedCreditCard.id] || 0)}
+                                </span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                                <span className="text-slate-400 text-sm">Ekstre Kesim Günü</span>
+                                <span className="text-white">Her ayın {selectedCreditCard.statementDay || 1}. günü</span>
+                            </div>
+                        </div>
+
+                        {/* Periods */}
+                        <div className="space-y-3">
+                            {getCreditCardPeriods(selectedCreditCard).length === 0 ? (
+                                <div className="text-center py-6 text-slate-500 text-sm">
+                                    Henüz bu kartta işlem yok.
+                                </div>
+                            ) : (
+                                getCreditCardPeriods(selectedCreditCard).map((period, index) => (
+                                    <div key={index} className="p-3 bg-slate-800/30 rounded-lg border border-slate-700/50">
+                                        <div className="flex justify-between items-center mb-2">
+                                            <span className={`text-sm font-medium ${index === 0 ? 'text-purple-400' : 'text-slate-300'}`}>
+                                                {period.label}
+                                            </span>
+                                            <span className="text-rose-400 font-semibold">
+                                                {privacyMode ? '₺***' : new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(period.total)}
+                                            </span>
+                                        </div>
+                                        <div className="text-[11px] text-slate-500">
+                                            {period.start.toLocaleDateString('tr-TR')} - {period.end.toLocaleDateString('tr-TR')}
+                                        </div>
+                                        <div className="text-[11px] text-slate-600 mt-1">
+                                            {period.transactions.length} işlem
+                                        </div>
+                                    </div>
+                                ))
+                            )}
+                        </div>
+
+                        <button
+                            onClick={() => setSelectedCreditCard(null)}
+                            className="w-full mt-4 py-3 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition-colors"
+                        >
+                            Kapat
+                        </button>
+                    </div>
+                </div>
+            )}
 
             {/* Add Transaction Form */}
             {isAdding && (
@@ -549,8 +870,8 @@ const Wallet = ({ transactions = [], onAddTransaction, onUpdateTransaction, onDe
                     <button
                         onClick={() => setShowFilters(!showFilters)}
                         className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${showFilters || hasActiveFilters
-                                ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/50'
-                                : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
+                            ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/50'
+                            : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
                             }`}
                     >
                         <Filter className="w-4 h-4" />

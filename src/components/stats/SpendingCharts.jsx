@@ -11,7 +11,9 @@ const SpendingCharts = ({ transactions = [], categories = [], dateFilter, custom
     const [focusedItem, setFocusedItem] = useState(null); // Item to show in center (null = total)
 
     const expenseTransactions = useMemo(() => {
-        return transactions.filter(t => t.type === 'expense');
+        // Filter out "Kredi Kartı Ödemesi" to avoid double counting
+        // (card expenses are already counted, payment is just a balance transfer)
+        return transactions.filter(t => t.type === 'expense' && t.category !== 'Kredi Kartı Ödemesi');
     }, [transactions]);
 
     // Main Category Data

@@ -17,7 +17,8 @@ const CashFlowComparison = ({ transactions = [], dateFilter, customRange, privac
             let expense = 0;
             txs.forEach(t => {
                 if (t.type === 'income') income += Number(t.amount);
-                if (t.type === 'expense') expense += Number(t.amount);
+                // Exclude "Kredi Kartı Ödemesi" from expense totals to avoid double counting
+                if (t.type === 'expense' && t.category !== 'Kredi Kartı Ödemesi') expense += Number(t.amount);
             });
             return { income, expense, net: income - expense };
         };
@@ -81,7 +82,8 @@ const CashFlowComparison = ({ transactions = [], dateFilter, customRange, privac
 
             if (rawMap[key]) {
                 if (t.type === 'income') rawMap[key].income += Number(t.amount);
-                if (t.type === 'expense') rawMap[key].expense += Number(t.amount);
+                // Exclude "Kredi Kartı Ödemesi" from expense to avoid double counting
+                if (t.type === 'expense' && t.category !== 'Kredi Kartı Ödemesi') rawMap[key].expense += Number(t.amount);
             }
         });
 

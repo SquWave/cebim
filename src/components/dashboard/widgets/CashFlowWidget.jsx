@@ -22,7 +22,7 @@ const CashFlowWidget = ({ transactions = [], privacyMode = false }) => {
             .reduce((sum, t) => sum + Number(t.amount), 0);
 
         const totalExpense = filteredTransactions
-            .filter(t => t.type === 'expense')
+            .filter(t => t.type === 'expense' && t.category !== 'Kredi Kartı Ödemesi')
             .reduce((sum, t) => sum + Number(t.amount), 0);
 
         return {
