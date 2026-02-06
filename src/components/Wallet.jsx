@@ -165,7 +165,13 @@ const Wallet = ({ transactions = [], onAddTransaction, onUpdateTransaction, onDe
         return balances;
     }, [accounts, safeTransactions]);
 
-    const totalBalance = Object.values(accountBalances).reduce((a, b) => a + b, 0);
+    // Total balance for cash and bank accounts only (exclude credit cards)
+    const totalBalance = Object.entries(accountBalances)
+        .filter(([accId]) => {
+            const acc = accounts.find(a => a.id === accId);
+            return acc && acc.type !== 'credit_card';
+        })
+        .reduce((sum, [, balance]) => sum + balance, 0);
 
     // Helper to get icon component
     const getCategoryIcon = (iconName) => {

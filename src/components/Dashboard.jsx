@@ -30,10 +30,16 @@ const Dashboard = ({
         return `${prefix}${formatCurrency(value)}`;
     };
 
-    // Calculate Net Worth
-    const totalInitialBalance = accounts.reduce((sum, acc) => sum + (Number(acc.initialBalance) || 0), 0);
+    // Calculate Net Worth (exclude credit cards from cash calculation)
+    const totalInitialBalance = accounts
+        .filter(acc => acc.type !== 'credit_card')
+        .reduce((sum, acc) => sum + (Number(acc.initialBalance) || 0), 0);
 
     const totalCash = transactions.reduce((acc, curr) => {
+        // Skip transactions on credit card accounts for cash total
+        const txAccount = accounts.find(a => a.id === curr.accountId);
+        if (txAccount && txAccount.type === 'credit_card') return acc;
+
         if (curr.type === 'income') return acc + Number(curr.amount);
         if (curr.type === 'expense') return acc - Number(curr.amount);
         return acc;
