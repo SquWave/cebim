@@ -348,6 +348,68 @@ export const usePortfolioOperations = ({ onUpdateAsset, onDeleteAsset }) => {
             alert("Satış kaydı güncellenirken bir hata oluştu.");
         }
     };
+    const handleStockSplit = async (asset, ratio) => {
+        const numRatio = Number(ratio);
+        if (isNaN(numRatio) || numRatio <= 0) {
+            alert('Lütfen 0\'dan büyük geçerli bir bölünme oranı girin.');
+            return;
+        }
+
+        if (!confirm(`Tüm alım ve satım kayıtlarınız %${numRatio} bedelsiz bölünme oranına göre güncellenecektir. Geçmiş kâr/zarar tutarlarınız değişmeyecek, sadece adet ve fiyatlar ayarlanacaktır. Onaylıyor musunuz?`)) {
+            return;
+        }
+
+        try {
+            const multiplier = 1 + (numRatio / 100);
+
+            // Period-aware update
+            let periodAsset = migrateAssetToPeriods(migrateFlatAssetToLots(asset));
+            const activePeriod = getActivePeriod(periodAsset);
+
+            if (!activePeriod || !activePeriod.lots || activePeriod.lots.length === 0) {
+                alert('Bölünme işlemi uygulanabilecek aktif bir varlık kaydı bulunamadı.');
+                return;
+            }
+
+            // Update lots in active period
+            const updatedLots = activePeriod.lots.map(lot => ({
+                ...lot,
+                amount: lot.amount * multiplier,
+                cost: lot.cost / multiplier
+            }));
+
+            // Update sales in active period
+            const updatedSales = (activePeriod.sales || []).map(sale => ({
+                ...sale,
+                amount: sale.amount * multiplier,
+                salePrice: sale.salePrice / multiplier,
+                avgCost: sale.avgCost / multiplier
+                // profit remains identical mathematically (newAmount * newSalePrice) - (newAmount * newAvgCost)
+            }));
+
+            const updatedActivePeriod = {
+                ...activePeriod,
+                lots: updatedLots,
+                sales: updatedSales
+            };
+
+            const updatedPeriods = periodAsset.periods.map(p =>
+                p.id === activePeriod.id ? updatedActivePeriod : p
+            );
+
+            // Keep backward-compat arrays synced with active period
+            await onUpdateAsset({
+                ...periodAsset,
+                periods: updatedPeriods,
+                lots: updatedLots, // Fallback fields
+                sales: updatedSales
+            });
+
+        } catch (error) {
+            console.error("Error applying stock split:", error);
+            alert("Bedelsiz bölünme işlemi sırasında bir hata oluştu.");
+        }
+    };
 
     return {
         // Lot state & handlers
@@ -373,6 +435,7 @@ export const usePortfolioOperations = ({ onUpdateAsset, onDeleteAsset }) => {
         handleEditSale,
         handleCancelEditSale,
         handleSaveSale,
+        handleStockSplit,
         // Expansion state
         expandedAssets,
         setExpandedAssets

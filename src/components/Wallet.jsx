@@ -14,6 +14,9 @@ const Wallet = ({ transactions = [], onAddTransaction, onUpdateTransaction, onDe
     const [selectedAccountId, setSelectedAccountId] = useState('');
     const [toAccountId, setToAccountId] = useState('');
     const [editingTransaction, setEditingTransaction] = useState(null);
+    const [installmentCount, setInstallmentCount] = useState('1');
+    const [totalWithInterest, setTotalWithInterest] = useState('');
+    const [useInterest, setUseInterest] = useState(false);
 
     // Account State
     const [isAddingAccount, setIsAddingAccount] = useState(false);
@@ -74,6 +77,16 @@ const Wallet = ({ transactions = [], onAddTransaction, onUpdateTransaction, onDe
         const cardTransactions = safeTransactions.filter(t => t.accountId === acc.id && t.type === 'expense');
         if (cardTransactions.length === 0) return [];
 
+        // Helper: get effective period amount for a transaction
+        // For installment transactions, only count the installment amount per period
+        const getPeriodAmount = (t) => {
+            const iCount = Number(t.installmentCount) || 1;
+            if (iCount > 1) {
+                return Number(t.installmentAmount) || (Number(t.amount) / iCount);
+            }
+            return Number(t.amount);
+        };
+
         // Find the earliest transaction date
         const dates = cardTransactions.map(t => new Date(t.date));
         const earliest = new Date(Math.min(...dates));
@@ -83,22 +96,21 @@ const Wallet = ({ transactions = [], onAddTransaction, onUpdateTransaction, onDe
         let periodStart = getCurrentPeriodStart(statementDay);
 
         // Current period
-        const currentPeriodExpenses = cardTransactions
-            .filter(t => new Date(t.date) >= periodStart && new Date(t.date) <= periodEnd)
-            .reduce((sum, t) => sum + Number(t.amount), 0);
+        const currentPeriodTxs = cardTransactions.filter(t => new Date(t.date) >= periodStart && new Date(t.date) <= periodEnd);
+        const currentPeriodExpenses = currentPeriodTxs.reduce((sum, t) => sum + getPeriodAmount(t), 0);
 
         periods.push({
             label: 'Bu Dönem',
             start: periodStart,
             end: periodEnd,
             total: currentPeriodExpenses,
-            transactions: cardTransactions.filter(t => new Date(t.date) >= periodStart && new Date(t.date) <= periodEnd)
+            transactions: currentPeriodTxs
         });
 
         // Previous periods (up to 6 months back)
         for (let i = 0; i < 6; i++) {
             periodEnd = new Date(periodStart);
-            periodEnd.setMilliseconds(-1); // End of previous period
+            periodEnd.setMilliseconds(-1);
 
             const prevMonth = periodStart.getMonth() === 0 ? 11 : periodStart.getMonth() - 1;
             const prevYear = periodStart.getMonth() === 0 ? periodStart.getFullYear() - 1 : periodStart.getFullYear();
@@ -108,9 +120,8 @@ const Wallet = ({ transactions = [], onAddTransaction, onUpdateTransaction, onDe
 
             if (periodStart < earliest) break;
 
-            const periodExpenses = cardTransactions
-                .filter(t => new Date(t.date) >= periodStart && new Date(t.date) <= periodEnd)
-                .reduce((sum, t) => sum + Number(t.amount), 0);
+            const periodTxs = cardTransactions.filter(t => new Date(t.date) >= periodStart && new Date(t.date) <= periodEnd);
+            const periodExpenses = periodTxs.reduce((sum, t) => sum + getPeriodAmount(t), 0);
 
             if (periodExpenses > 0) {
                 periods.push({
@@ -118,7 +129,7 @@ const Wallet = ({ transactions = [], onAddTransaction, onUpdateTransaction, onDe
                     start: periodStart,
                     end: periodEnd,
                     total: periodExpenses,
-                    transactions: cardTransactions.filter(t => new Date(t.date) >= periodStart && new Date(t.date) <= periodEnd)
+                    transactions: periodTxs
                 });
             }
         }
@@ -126,18 +137,68 @@ const Wallet = ({ transactions = [], onAddTransaction, onUpdateTransaction, onDe
         return periods;
     };
 
+    // Helper: Count how many periods have passed since a transaction date
+    const getPaidInstallments = (txDate, statementDay) => {
+        const tx = new Date(txDate);
+        const today = new Date();
+        const day = parseInt(statementDay) || 1;
+
+        // Count full billing cycles that have passed
+        let count = 0;
+        let checkDate = new Date(tx);
+        
+        // Find the first statement day after the transaction
+        let nextStatement = new Date(checkDate.getFullYear(), checkDate.getMonth(), day);
+        if (nextStatement <= checkDate) {
+            nextStatement.setMonth(nextStatement.getMonth() + 1);
+        }
+        // Adjust for months with fewer days
+        const lastDay = new Date(nextStatement.getFullYear(), nextStatement.getMonth() + 1, 0).getDate();
+        if (day > lastDay) nextStatement.setDate(lastDay);
+
+        // Count how many statement days have passed
+        while (nextStatement <= today && count < 100) {
+            count++;
+            nextStatement = new Date(nextStatement.getFullYear(), nextStatement.getMonth() + 1, 1);
+            const md = new Date(nextStatement.getFullYear(), nextStatement.getMonth() + 1, 0).getDate();
+            nextStatement.setDate(Math.min(day, md));
+        }
+        return count;
+    };
+
     // Derived State
     const accountBalances = useMemo(() => {
         const balances = {};
         accounts.forEach(acc => {
             if (acc.type === 'credit_card') {
-                // Credit card: limit - current period expenses
-                const periodStart = getCurrentPeriodStart(acc.statementDay || 1);
-                const periodExpenses = safeTransactions
+                const limit = Number(acc.creditLimit) || 0;
+                const statDay = acc.statementDay || 1;
+                const periodStart = getCurrentPeriodStart(statDay);
+
+                // Calculate remaining installment debt for all installment transactions
+                let totalRemainingDebt = 0;
+                let currentPeriodNonInstallment = 0;
+
+                safeTransactions
                     .filter(t => t.accountId === acc.id && t.type === 'expense')
-                    .filter(t => new Date(t.date) >= periodStart)
-                    .reduce((sum, t) => sum + Number(t.amount), 0);
-                balances[acc.id] = (Number(acc.creditLimit) || 0) - periodExpenses;
+                    .forEach(t => {
+                        const iCount = Number(t.installmentCount) || 1;
+                        if (iCount > 1) {
+                            // Installment transaction
+                            const totalAmount = Number(t.totalWithInterest) || Number(t.amount);
+                            const perInstallment = Number(t.installmentAmount) || (totalAmount / iCount);
+                            const paid = Math.min(getPaidInstallments(t.date, statDay), iCount);
+                            const remaining = totalAmount - (paid * perInstallment);
+                            totalRemainingDebt += Math.max(remaining, 0);
+                        } else {
+                            // Single payment - only affects current period
+                            if (new Date(t.date) >= periodStart) {
+                                currentPeriodNonInstallment += Number(t.amount);
+                            }
+                        }
+                    });
+
+                balances[acc.id] = limit - totalRemainingDebt - currentPeriodNonInstallment;
             } else {
                 // Regular account: initial balance +/- transactions
                 balances[acc.id] = Number(acc.initialBalance) || 0;
@@ -151,15 +212,11 @@ const Wallet = ({ transactions = [], onAddTransaction, onUpdateTransaction, onDe
                 } else if (t.type === 'expense') {
                     balances[t.accountId] -= Number(t.amount);
                 } else if (t.type === 'transfer' && t.toAccountId) {
-                    // Deduct from source (accountId)
                     balances[t.accountId] -= Number(t.amount);
-                    // Add to destination (toAccountId)
                     if (balances[t.toAccountId] !== undefined) {
                         balances[t.toAccountId] += Number(t.amount);
                     }
                 }
-            } else if (!t.accountId) {
-                // Legacy transactions
             }
         });
         return balances;
@@ -351,12 +408,21 @@ const Wallet = ({ transactions = [], onAddTransaction, onUpdateTransaction, onDe
             const selectedAccount = accounts.find(a => a.id === selectedAccountId);
             if (selectedAccount && selectedAccount.type === 'credit_card') {
                 const remainingLimit = accountBalances[selectedAccountId] || 0;
-                if (numAmount > remainingLimit) {
-                    alert(`Kart limitiniz aşılıyor!\n\nKalan limit: ${new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(remainingLimit)}\nHarcama tutarı: ${new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(numAmount)}`);
+                const iCount = Number(installmentCount) || 1;
+                const effectiveTotal = (useInterest && totalWithInterest) ? Number(totalWithInterest) : numAmount;
+                if (effectiveTotal > remainingLimit) {
+                    alert(`Kart limitiniz aşılıyor!\n\nKalan limit: ${new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(remainingLimit)}\nHarcama tutarı: ${new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(effectiveTotal)}`);
                     return;
                 }
             }
         }
+
+        // Build transaction object
+        const selectedAccount = accounts.find(a => a.id === selectedAccountId);
+        const isCreditCard = selectedAccount && selectedAccount.type === 'credit_card';
+        const iCount = isCreditCard ? (Number(installmentCount) || 1) : 1;
+        const effectiveTotal = (isCreditCard && useInterest && totalWithInterest) ? Number(totalWithInterest) : numAmount;
+        const perInstallment = iCount > 1 ? Math.round((effectiveTotal / iCount) * 100) / 100 : numAmount;
 
         onAddTransaction({
             id: Date.now(),
@@ -366,14 +432,24 @@ const Wallet = ({ transactions = [], onAddTransaction, onUpdateTransaction, onDe
             type,
             date: new Date(date).toISOString(),
             accountId: selectedAccountId,
-            toAccountId: type === 'transfer' ? toAccountId : null
+            toAccountId: type === 'transfer' ? toAccountId : null,
+            // Installment fields
+            ...(isCreditCard && iCount > 1 ? {
+                installmentCount: iCount,
+                installmentAmount: perInstallment,
+                totalWithInterest: useInterest ? effectiveTotal : null,
+                installmentStartDate: new Date(date).toISOString()
+            } : {})
         });
 
         setAmount('');
         setDescription('');
         setCategory('');
         setToAccountId('');
-        setDate(formatDateForInput()); // Reset to current local datetime
+        setInstallmentCount('1');
+        setTotalWithInterest('');
+        setUseInterest(false);
+        setDate(formatDateForInput());
         setIsAdding(false);
     };
 
@@ -388,11 +464,33 @@ const Wallet = ({ transactions = [], onAddTransaction, onUpdateTransaction, onDe
         e.preventDefault();
         if (!editingTransaction || !editingTransaction.amount) return;
 
-        await onUpdateTransaction({
+        const editAcc = accounts.find(a => a.id === editingTransaction.accountId);
+        const isEditCC = editAcc && editAcc.type === 'credit_card';
+        const editICount = isEditCC ? (Number(editingTransaction.installmentCount) || 1) : 1;
+        const editUseInterest = editingTransaction.useInterest || false;
+        const editTotalInterest = editUseInterest ? Number(editingTransaction.totalWithInterest) : null;
+        const editEffectiveTotal = editTotalInterest || Number(editingTransaction.amount);
+        const editPerInstallment = editICount > 1 ? Math.round((editEffectiveTotal / editICount) * 100) / 100 : Number(editingTransaction.amount);
+
+        const updatedTx = {
             ...editingTransaction,
             amount: Number(editingTransaction.amount),
-            date: new Date(editingTransaction.date).toISOString()
+            date: new Date(editingTransaction.date).toISOString(),
+            installmentCount: isEditCC && editICount > 1 ? editICount : null,
+            installmentAmount: isEditCC && editICount > 1 ? editPerInstallment : null,
+            totalWithInterest: isEditCC && editICount > 1 && editUseInterest ? editEffectiveTotal : null,
+            installmentStartDate: isEditCC && editICount > 1 ? (editingTransaction.installmentStartDate || new Date(editingTransaction.date).toISOString()) : null,
+        };
+
+        // Remove useInterest from saved data (UI-only field)
+        delete updatedTx.useInterest;
+
+        // Clean null/undefined values for Firestore compatibility
+        Object.keys(updatedTx).forEach(key => {
+            if (updatedTx[key] === undefined) delete updatedTx[key];
         });
+
+        await onUpdateTransaction(updatedTx);
         setEditingTransaction(null);
     };
 
@@ -739,6 +837,82 @@ const Wallet = ({ transactions = [], onAddTransaction, onUpdateTransaction, onDe
                             </div>
                         )}
                         <input type="number" min="0.01" step="0.01" placeholder="Tutar (TL)" value={amount} onChange={(e) => setAmount(e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500" required />
+                        
+                        {/* Installment Fields - Only for credit card expenses */}
+                        {type === 'expense' && (() => {
+                            const selAcc = accounts.find(a => a.id === selectedAccountId);
+                            return selAcc && selAcc.type === 'credit_card';
+                        })() && (
+                            <div className="p-3 bg-slate-800/50 rounded-lg border border-slate-700/50 space-y-3">
+                                <div>
+                                    <label className="text-xs text-slate-400 block mb-1">Taksit Sayısı</label>
+                                    <select
+                                        value={installmentCount}
+                                        onChange={(e) => setInstallmentCount(e.target.value)}
+                                        className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-white focus:outline-none focus:border-indigo-500"
+                                    >
+                                        <option value="1">Tek Çekim</option>
+                                        {[2,3,4,5,6,7,8,9,10,11,12].map(n => (
+                                            <option key={n} value={n}>{n} Taksit</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                
+                                {Number(installmentCount) > 1 && (
+                                    <>
+                                        <label className="flex items-center gap-2 cursor-pointer">
+                                            <input
+                                                type="checkbox"
+                                                checked={useInterest}
+                                                onChange={(e) => setUseInterest(e.target.checked)}
+                                                className="w-4 h-4 rounded border-slate-600 bg-slate-800 text-indigo-500 focus:ring-indigo-500"
+                                            />
+                                            <span className="text-xs text-slate-400">Vade farklı</span>
+                                        </label>
+                                        
+                                        {useInterest && (
+                                            <input
+                                                type="number"
+                                                min="0.01"
+                                                step="0.01"
+                                                placeholder="Vade farklı toplam tutar (₺)"
+                                                value={totalWithInterest}
+                                                onChange={(e) => setTotalWithInterest(e.target.value)}
+                                                className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+                                            />
+                                        )}
+                                        
+                                        {/* Installment Summary */}
+                                        {amount && (
+                                            <div className="text-xs text-slate-400 bg-slate-900/50 p-2 rounded-lg">
+                                                {(() => {
+                                                    const total = (useInterest && totalWithInterest) ? Number(totalWithInterest) : Number(amount);
+                                                    const per = Math.round((total / Number(installmentCount)) * 100) / 100;
+                                                    return (
+                                                        <>
+                                                            <div className="flex justify-between">
+                                                                <span>Taksit tutarı:</span>
+                                                                <span className="text-white font-medium">{new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(per)}</span>
+                                                            </div>
+                                                            <div className="flex justify-between mt-1">
+                                                                <span>Toplam:</span>
+                                                                <span className="text-white font-medium">{new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(total)}</span>
+                                                            </div>
+                                                            {useInterest && totalWithInterest && Number(totalWithInterest) > Number(amount) && (
+                                                                <div className="flex justify-between mt-1 text-amber-400">
+                                                                    <span>Vade farkı:</span>
+                                                                    <span>{new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(Number(totalWithInterest) - Number(amount))}</span>
+                                                                </div>
+                                                            )}
+                                                        </>
+                                                    );
+                                                })()}
+                                            </div>
+                                        )}
+                                    </>
+                                )}
+                            </div>
+                        )}
                         <input
                             type="datetime-local"
                             value={date}
@@ -796,6 +970,75 @@ const Wallet = ({ transactions = [], onAddTransaction, onUpdateTransaction, onDe
                                 className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-white focus:outline-none focus:border-indigo-500"
                                 required
                             />
+                            
+                            {/* Installment Fields for Edit */}
+                            {editingTransaction.type === 'expense' && (() => {
+                                const editAcc = accounts.find(a => a.id === editingTransaction.accountId);
+                                return editAcc && editAcc.type === 'credit_card';
+                            })() && (
+                                <div className="p-3 bg-slate-800/50 rounded-lg border border-slate-700/50 space-y-3">
+                                    <div>
+                                        <label className="text-xs text-slate-400 block mb-1">Taksit Sayısı</label>
+                                        <select
+                                            value={editingTransaction.installmentCount || 1}
+                                            onChange={(e) => setEditingTransaction({ ...editingTransaction, installmentCount: Number(e.target.value) })}
+                                            className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-white focus:outline-none focus:border-indigo-500"
+                                        >
+                                            <option value="1">Tek Çekim</option>
+                                            {[2,3,4,5,6,7,8,9,10,11,12].map(n => (
+                                                <option key={n} value={n}>{n} Taksit</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    
+                                    {(editingTransaction.installmentCount || 1) > 1 && (
+                                        <>
+                                            <label className="flex items-center gap-2 cursor-pointer">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={editingTransaction.useInterest || false}
+                                                    onChange={(e) => setEditingTransaction({ ...editingTransaction, useInterest: e.target.checked })}
+                                                    className="w-4 h-4 rounded border-slate-600 bg-slate-800 text-indigo-500 focus:ring-indigo-500"
+                                                />
+                                                <span className="text-xs text-slate-400">Vade farklı</span>
+                                            </label>
+                                            
+                                            {editingTransaction.useInterest && (
+                                                <input
+                                                    type="number"
+                                                    min="0.01"
+                                                    step="0.01"
+                                                    placeholder="Vade farklı toplam tutar (₺)"
+                                                    value={editingTransaction.totalWithInterest || ''}
+                                                    onChange={(e) => setEditingTransaction({ ...editingTransaction, totalWithInterest: e.target.value })}
+                                                    className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+                                                />
+                                            )}
+                                            
+                                            {editingTransaction.amount && (
+                                                <div className="text-xs text-slate-400 bg-slate-900/50 p-2 rounded-lg">
+                                                    {(() => {
+                                                        const total = (editingTransaction.useInterest && editingTransaction.totalWithInterest) ? Number(editingTransaction.totalWithInterest) : Number(editingTransaction.amount);
+                                                        const per = Math.round((total / Number(editingTransaction.installmentCount)) * 100) / 100;
+                                                        return (
+                                                            <>
+                                                                <div className="flex justify-between">
+                                                                    <span>Taksit tutarı:</span>
+                                                                    <span className="text-white font-medium">{new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(per)}</span>
+                                                                </div>
+                                                                <div className="flex justify-between mt-1">
+                                                                    <span>Toplam:</span>
+                                                                    <span className="text-white font-medium">{new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(total)}</span>
+                                                                </div>
+                                                            </>
+                                                        );
+                                                    })()}
+                                                </div>
+                                            )}
+                                        </>
+                                    )}
+                                </div>
+                            )}
                             <input
                                 type="datetime-local"
                                 value={editingTransaction.date}
@@ -995,6 +1238,11 @@ const Wallet = ({ transactions = [], onAddTransaction, onUpdateTransaction, onDe
                                         </div>
                                         {t.description && (
                                             <div className="text-[11px] text-slate-500 mt-0.5 truncate">{t.description}</div>
+                                        )}
+                                        {t.installmentCount > 1 && (
+                                            <div className="text-[10px] text-purple-400 mt-0.5">
+                                                {t.installmentCount} Taksit • {privacyMode ? '₺***' : new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(t.installmentAmount)}/ay
+                                            </div>
                                         )}
                                     </div>
                                 </div>

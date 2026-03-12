@@ -110,7 +110,7 @@ export const shouldClosePeriod = (period) => {
 
 /**
  * Compute aggregated values from an asset (period-aware)
- * Only calculates from the ACTIVE period for current holdings
+ * Uses FIFO method: sales consume oldest lots first, avgCost is based on remaining lots
  */
 export const computeAggregatedValues = (rawAsset) => {
     const asset = migrateAssetToPeriods(rawAsset);
@@ -122,7 +122,6 @@ export const computeAggregatedValues = (rawAsset) => {
 
     // Calculate totals from LOTS (Purchases) in active period
     const totalPurchasedAmount = activePeriod.lots.reduce((sum, lot) => sum + (lot.amount || 0), 0);
-    const totalPurchasedCost = activePeriod.lots.reduce((sum, lot) => sum + ((lot.amount || 0) * (lot.cost || 0)), 0);
 
     // Calculate totals from SALES in active period
     const totalSoldAmount = (activePeriod.sales || []).reduce((sum, sale) => sum + (sale.amount || 0), 0);
@@ -130,8 +129,31 @@ export const computeAggregatedValues = (rawAsset) => {
     // Net Amount
     const totalAmount = totalPurchasedAmount - totalSoldAmount;
 
-    // Avg Cost (based on purchases in active period only)
-    const avgCost = totalPurchasedAmount > 0 ? totalPurchasedCost / totalPurchasedAmount : 0;
+    // FIFO-based avg cost: consume sales from oldest lots, compute avg from remaining
+    // Sort lots chronologically (oldest first)
+    const sortedLots = [...activePeriod.lots].sort((a, b) => (a.addedAt || 0) - (b.addedAt || 0));
+    
+    let remainingSold = totalSoldAmount;
+    const remainingLots = [];
+    
+    for (const lot of sortedLots) {
+        if (remainingSold >= lot.amount) {
+            // This lot is fully consumed by sales
+            remainingSold -= lot.amount;
+        } else {
+            // Partially or not consumed
+            remainingLots.push({
+                amount: lot.amount - remainingSold,
+                cost: lot.cost
+            });
+            remainingSold = 0;
+        }
+    }
+
+    // Avg cost from remaining lots only
+    const remainingTotalAmount = remainingLots.reduce((sum, l) => sum + l.amount, 0);
+    const remainingTotalCost = remainingLots.reduce((sum, l) => sum + (l.amount * l.cost), 0);
+    const avgCost = remainingTotalAmount > 0 ? remainingTotalCost / remainingTotalAmount : 0;
 
     // Get current price from the most recent lot in active period
     const currentPrice = activePeriod.lots[activePeriod.lots.length - 1]?.price || activePeriod.lots[0]?.price || 0;

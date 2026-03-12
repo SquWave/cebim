@@ -11,6 +11,7 @@ import CashFlowWidget from './dashboard/widgets/CashFlowWidget';
 import SpendingDistributionWidget from './dashboard/widgets/SpendingDistributionWidget';
 import AssetAllocationWidget from './dashboard/widgets/AssetAllocationWidget';
 import QuickTransactionWidget from './dashboard/widgets/QuickTransactionWidget';
+import CreditCardStatementsWidget from './dashboard/widgets/CreditCardStatementsWidget';
 
 const Dashboard = ({
     transactions,
@@ -84,6 +85,8 @@ const Dashboard = ({
                 return <AssetAllocationWidget key={widgetId} assets={assets} marketData={marketData} privacyMode={privacyMode} />;
             case 'quick_transaction':
                 return <QuickTransactionWidget key={widgetId} transactions={transactions} accounts={accounts} categories={categories} onAddTransaction={onAddTransaction} privacyMode={privacyMode} />;
+            case 'credit_card_statements':
+                return <CreditCardStatementsWidget key={widgetId} transactions={transactions} accounts={accounts} privacyMode={privacyMode} />;
             default:
                 return null;
         }

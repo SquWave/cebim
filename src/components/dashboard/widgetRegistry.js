@@ -1,4 +1,4 @@
-import { Wallet, TrendingUp, PieChart, ArrowRightLeft, BarChart3, Coins } from 'lucide-react';
+import { Wallet, TrendingUp, PieChart, ArrowRightLeft, BarChart3, Coins, CreditCard } from 'lucide-react';
 
 /**
  * Widget Registry
@@ -46,6 +46,13 @@ export const WIDGET_REGISTRY = {
         description: 'Hızlı işlem ekleme ve son 5 işlem',
         icon: Wallet,
         order: 6
+    },
+    credit_card_statements: {
+        id: 'credit_card_statements',
+        name: 'Kart Ekstreleri',
+        description: 'Kredi kartı dönemsel harcama özeti',
+        icon: CreditCard,
+        order: 7
     }
 };
 

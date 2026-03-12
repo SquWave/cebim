@@ -4,6 +4,7 @@ import TrendChart from './TrendChart';
 import SpendingCharts from './SpendingCharts';
 import CashFlowComparison from './CashFlowComparison';
 import DetailedReport from './DetailedReport';
+import CreditCardStatements from './CreditCardStatements';
 import { getDateRange, filterTransactionsByDateRange } from '../../utils/dateUtils';
 
 const WalletAnalysis = ({ transactions = [], categories = [], accounts = [], privacyMode = false }) => {
@@ -67,6 +68,9 @@ const WalletAnalysis = ({ transactions = [], categories = [], accounts = [], pri
 
                 {/* Detailed Report */}
                 <DetailedReport transactions={filteredTransactions} categories={categories} privacyMode={privacyMode} />
+
+                {/* Credit Card Statements */}
+                <CreditCardStatements transactions={transactions} accounts={accounts} privacyMode={privacyMode} />
             </div>
         </div>
     );

@@ -45,7 +45,7 @@ const Portfolio = ({ assets, onAddAsset, onUpdateAsset, onDeleteAsset, privacyMo
         isSelling, setIsSelling, saleForm, setSaleForm,
         viewMode, setViewMode,
         editingSale, editSaleForm, setEditSaleForm,
-        handleSale, handleDeleteSale, handleEditSale, handleCancelEditSale, handleSaveSale,
+        handleSale, handleDeleteSale, handleEditSale, handleCancelEditSale, handleSaveSale, handleStockSplit,
         expandedAssets, setExpandedAssets
     } = opsHook;
 
@@ -562,6 +562,18 @@ const Portfolio = ({ assets, onAddAsset, onUpdateAsset, onDeleteAsset, privacyMo
                                         >
                                             Satımlar
                                         </button>
+                                        <button
+                                            onClick={() => {
+                                                const ratio = prompt(`${asset.name} için bedelsiz bölünme oranını (%) girin:\n\nÖrn: 250 (%250 bölünme için)`);
+                                                if (ratio !== null) {
+                                                    handleStockSplit(asset, ratio);
+                                                }
+                                            }}
+                                            className="ml-auto px-3 py-1 text-sm font-medium rounded text-indigo-400 hover:bg-indigo-500/10 transition-colors border border-indigo-500/30 flex items-center gap-1"
+                                            title="Bedelsiz Bölünme Oranı Gir"
+                                        >
+                                            <span className="text-xs">Bölünme (%)</span>
+                                        </button>
                                     </div>
 
                                     {/* Content */}
@@ -637,10 +649,11 @@ const Portfolio = ({ assets, onAddAsset, onUpdateAsset, onDeleteAsset, privacyMo
                                                                         <span className="text-sm text-white font-medium">{lot.amount} Adet</span>
                                                                         <span className="text-xs text-slate-500">@{formatCurrency(lot.cost)}</span>
                                                                     </div>
-                                                                    <div className="text-xs text-slate-500 flex items-center gap-2">
-                                                                        <span>Maliyet: {formatCurrency(lotCostTotal)}</span>
-                                                                        <span>•</span>
-                                                                        <span>{formatTransactionDate(lot.addedAt)}</span>
+                                                                    <div className="text-xs text-slate-500">
+                                                                        Maliyet: {formatCurrency(lotCostTotal)}
+                                                                    </div>
+                                                                    <div className="text-[10px] text-slate-500 mt-0.5">
+                                                                        {formatTransactionDate(lot.addedAt)}
                                                                     </div>
                                                                 </div>
                                                                 <div className="flex items-start gap-2">
@@ -740,15 +753,15 @@ const Portfolio = ({ assets, onAddAsset, onUpdateAsset, onDeleteAsset, privacyMo
                                                                     <div className="text-xs text-slate-500">
                                                                         Ort. Maliyet: {formatCurrency(sale.avgCost)}
                                                                     </div>
+                                                                    <div className="text-[10px] text-slate-500 mt-0.5">
+                                                                        {formatTransactionDate(sale.soldAt)}
+                                                                    </div>
                                                                 </div>
                                                                 <div className="flex items-start gap-2">
                                                                     <div className="text-right">
                                                                         <div className="text-sm font-semibold text-white">{formatCurrency(sale.amount * sale.salePrice)}</div>
                                                                         <div className={`text-xs ${isSaleProfit ? 'text-emerald-400' : 'text-rose-400'}`}>
                                                                             {isSaleProfit ? '+' : ''}{formatCurrency(sale.profit)}
-                                                                        </div>
-                                                                        <div className="text-[10px] text-slate-500 mt-1">
-                                                                            {new Date(sale.soldAt).toLocaleDateString('tr-TR')}
                                                                         </div>
                                                                     </div>
                                                                     <div className="flex flex-col gap-1">
