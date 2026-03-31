@@ -126,8 +126,9 @@ export const computeAggregatedValues = (rawAsset) => {
     // Calculate totals from SALES in active period
     const totalSoldAmount = (activePeriod.sales || []).reduce((sum, sale) => sum + (sale.amount || 0), 0);
 
-    // Net Amount
-    const totalAmount = totalPurchasedAmount - totalSoldAmount;
+    // Net Amount with safe float rounding (e.g. 8.19 - 2 = 6.1899999999999995 -> 6.19)
+    const rawTotalAmount = totalPurchasedAmount - totalSoldAmount;
+    const totalAmount = Math.round(rawTotalAmount * 1e8) / 1e8;
 
     // FIFO-based avg cost: consume sales from oldest lots, compute avg from remaining
     // Sort lots chronologically (oldest first)
@@ -139,11 +140,12 @@ export const computeAggregatedValues = (rawAsset) => {
     for (const lot of sortedLots) {
         if (remainingSold >= lot.amount) {
             // This lot is fully consumed by sales
-            remainingSold -= lot.amount;
+            remainingSold = Math.round((remainingSold - lot.amount) * 1e8) / 1e8;
         } else {
             // Partially or not consumed
+            const remainingLotAmount = Math.round((lot.amount - remainingSold) * 1e8) / 1e8;
             remainingLots.push({
-                amount: lot.amount - remainingSold,
+                amount: remainingLotAmount,
                 cost: lot.cost
             });
             remainingSold = 0;
