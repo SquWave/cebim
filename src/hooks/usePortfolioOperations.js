@@ -271,13 +271,12 @@ export const usePortfolioOperations = ({ onUpdateAsset, onDeleteAsset }) => {
             // Find the active period (the unclosed one)
             const activePeriod = periodsWithSaleRemoved.find(p => p.closedAt === null);
 
-            // Also update the backward-compat lots array to include all lots from active period
-            const allActiveLots = activePeriod ? activePeriod.lots : (asset.lots || []);
+            // We purposefully do NOT touch the global `asset.lots` array during a sale deletion
+            // because a sale deletion does not delete historical purchases.
 
             await onUpdateAsset({
                 ...asset,
                 sales: updatedSales,
-                lots: allActiveLots,
                 periods: periodsWithSaleRemoved,
                 currentPeriodId: activePeriod?.id || null
             });
@@ -325,7 +324,7 @@ export const usePortfolioOperations = ({ onUpdateAsset, onDeleteAsset }) => {
         }
 
         try {
-            const updatedSales = asset.sales.map(sale => {
+            const updateSaleObject = (sale) => {
                 if (sale.id === saleId) {
                     return {
                         ...sale,
@@ -335,11 +334,22 @@ export const usePortfolioOperations = ({ onUpdateAsset, onDeleteAsset }) => {
                     };
                 }
                 return sale;
-            });
+            };
+
+            const updatedSales = asset.sales.map(updateSaleObject);
+
+            let updatedPeriods = asset.periods;
+            if (asset.periods) {
+                updatedPeriods = asset.periods.map(period => ({
+                    ...period,
+                    sales: (period.sales || []).map(updateSaleObject)
+                }));
+            }
 
             await onUpdateAsset({
                 ...asset,
-                sales: updatedSales
+                sales: updatedSales,
+                periods: updatedPeriods
             });
 
             handleCancelEditSale();
@@ -397,12 +407,38 @@ export const usePortfolioOperations = ({ onUpdateAsset, onDeleteAsset }) => {
                 p.id === activePeriod.id ? updatedActivePeriod : p
             );
 
-            // Keep backward-compat arrays synced with active period
+            // Carefully update the global fallback arrays to only modify items in the active period
+            const activePeriodLotIds = new Set(activePeriod.lots.map(l => l.id));
+            const activePeriodSaleIds = new Set((activePeriod.sales || []).map(s => s.id));
+
+            const globalUpdatedLots = (periodAsset.lots || []).map(lot => {
+                if (activePeriodLotIds.has(lot.id)) {
+                    return {
+                        ...lot,
+                        amount: lot.amount * multiplier,
+                        cost: lot.cost / multiplier
+                    };
+                }
+                return lot;
+            });
+
+            const globalUpdatedSales = (periodAsset.sales || []).map(sale => {
+                if (activePeriodSaleIds.has(sale.id)) {
+                    return {
+                        ...sale,
+                        amount: sale.amount * multiplier,
+                        salePrice: sale.salePrice / multiplier,
+                        avgCost: sale.avgCost / multiplier
+                    };
+                }
+                return sale;
+            });
+
             await onUpdateAsset({
                 ...periodAsset,
                 periods: updatedPeriods,
-                lots: updatedLots, // Fallback fields
-                sales: updatedSales
+                lots: globalUpdatedLots,
+                sales: globalUpdatedSales
             });
 
         } catch (error) {
