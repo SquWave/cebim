@@ -43,3 +43,12 @@
     -webkit-backdrop-filter: inherit;
   }
 }
+
+@layer utilities {
+  /* Fix iOS Safari input focus/keyboard issue globally */
+  input, textarea, select {
+    -webkit-user-select: auto !important;
+    user-select: auto !important;
+    touch-action: manipulation !important;
+  }
+}
