@@ -7,9 +7,10 @@
     @apply bg-slate-950 text-slate-100 font-sans antialiased;
     /* Allow native scrolling to fix mobile click misalignment issues */
     min-height: 100vh;
-    min-height: 100dvh; /* Dynamic viewport height for mobile */
+    min-height: 100dvh;
+    /* Dynamic viewport height for mobile */
   }
-  
+
   #root {
     /* Allow root to take full height */
     min-height: 100vh;
@@ -22,9 +23,11 @@
   .pt-safe {
     padding-top: env(safe-area-inset-top);
   }
+
   .pb-safe {
     padding-bottom: env(safe-area-inset-bottom);
   }
+
   /* Header background extends into safe area using pseudo-element */
   .header-safe::before {
     content: '';
@@ -40,8 +43,11 @@
 }
 
 @layer utilities {
+
   /* Fix iOS Safari input focus/keyboard issue globally */
-  input, textarea, select {
+  input,
+  textarea,
+  select {
     -webkit-user-select: auto !important;
     user-select: auto !important;
     touch-action: manipulation !important;
