@@ -146,7 +146,7 @@ const Wallet = ({ transactions = [], onAddTransaction, onUpdateTransaction, onDe
         // Count full billing cycles that have passed
         let count = 0;
         let checkDate = new Date(tx);
-        
+
         // Find the first statement day after the transaction
         let nextStatement = new Date(checkDate.getFullYear(), checkDate.getMonth(), day);
         if (nextStatement <= checkDate) {
@@ -838,97 +838,97 @@ const Wallet = ({ transactions = [], onAddTransaction, onUpdateTransaction, onDe
                         )}
                         {/* Amount Input */}
                         <div className="relative z-20">
-                            <input 
-                                type="text" 
-                                inputMode="decimal" 
-                                min="0.01" 
-                                step="0.01" 
-                                placeholder="Tutar (TL) - Örn: 150.50" 
-                                value={amount} 
+                            <input
+                                type="text"
+                                inputMode="decimal"
+                                min="0.01"
+                                step="0.01"
+                                placeholder="Tutar (TL)"
+                                value={amount}
                                 onChange={(e) => {
                                     const val = e.target.value.replace(',', '.');
-                                    if(val === '' || /^\d*\.?\d*$/.test(val)) setAmount(val);
-                                }} 
-                                className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 touch-manipulation" 
-                                required 
+                                    if (val === '' || /^\d*\.?\d*$/.test(val)) setAmount(val);
+                                }}
+                                className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 touch-manipulation"
+                                required
                             />
                         </div>
-                        
+
                         {/* Installment Fields - Only for credit card expenses */}
                         {type === 'expense' && (() => {
                             const selAcc = accounts.find(a => a.id === selectedAccountId);
                             return selAcc && selAcc.type === 'credit_card';
                         })() && (
-                            <div className="p-3 bg-slate-800/50 rounded-lg border border-slate-700/50 space-y-3">
-                                <div>
-                                    <label className="text-xs text-slate-400 block mb-1">Taksit Sayısı</label>
-                                    <select
-                                        value={installmentCount}
-                                        onChange={(e) => setInstallmentCount(e.target.value)}
-                                        className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-white focus:outline-none focus:border-indigo-500"
-                                    >
-                                        <option value="1">Tek Çekim</option>
-                                        {[2,3,4,5,6,7,8,9,10,11,12].map(n => (
-                                            <option key={n} value={n}>{n} Taksit</option>
-                                        ))}
-                                    </select>
-                                </div>
-                                
-                                {Number(installmentCount) > 1 && (
-                                    <>
-                                        <label className="flex items-center gap-2 cursor-pointer">
-                                            <input
-                                                type="checkbox"
-                                                checked={useInterest}
-                                                onChange={(e) => setUseInterest(e.target.checked)}
-                                                className="w-4 h-4 rounded border-slate-600 bg-slate-800 text-indigo-500 focus:ring-indigo-500"
-                                            />
-                                            <span className="text-xs text-slate-400">Vade farklı</span>
-                                        </label>
-                                        
-                                        {useInterest && (
-                                            <input
-                                                type="number"
-                                                min="0.01"
-                                                step="0.01"
-                                                placeholder="Vade farklı toplam tutar (₺)"
-                                                value={totalWithInterest}
-                                                onChange={(e) => setTotalWithInterest(e.target.value)}
-                                                className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
-                                            />
-                                        )}
-                                        
-                                        {/* Installment Summary */}
-                                        {amount && (
-                                            <div className="text-xs text-slate-400 bg-slate-900/50 p-2 rounded-lg">
-                                                {(() => {
-                                                    const total = (useInterest && totalWithInterest) ? Number(totalWithInterest) : Number(amount);
-                                                    const per = Math.round((total / Number(installmentCount)) * 100) / 100;
-                                                    return (
-                                                        <>
-                                                            <div className="flex justify-between">
-                                                                <span>Taksit tutarı:</span>
-                                                                <span className="text-white font-medium">{new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(per)}</span>
-                                                            </div>
-                                                            <div className="flex justify-between mt-1">
-                                                                <span>Toplam:</span>
-                                                                <span className="text-white font-medium">{new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(total)}</span>
-                                                            </div>
-                                                            {useInterest && totalWithInterest && Number(totalWithInterest) > Number(amount) && (
-                                                                <div className="flex justify-between mt-1 text-amber-400">
-                                                                    <span>Vade farkı:</span>
-                                                                    <span>{new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(Number(totalWithInterest) - Number(amount))}</span>
+                                <div className="p-3 bg-slate-800/50 rounded-lg border border-slate-700/50 space-y-3">
+                                    <div>
+                                        <label className="text-xs text-slate-400 block mb-1">Taksit Sayısı</label>
+                                        <select
+                                            value={installmentCount}
+                                            onChange={(e) => setInstallmentCount(e.target.value)}
+                                            className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-white focus:outline-none focus:border-indigo-500"
+                                        >
+                                            <option value="1">Tek Çekim</option>
+                                            {[2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(n => (
+                                                <option key={n} value={n}>{n} Taksit</option>
+                                            ))}
+                                        </select>
+                                    </div>
+
+                                    {Number(installmentCount) > 1 && (
+                                        <>
+                                            <label className="flex items-center gap-2 cursor-pointer">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={useInterest}
+                                                    onChange={(e) => setUseInterest(e.target.checked)}
+                                                    className="w-4 h-4 rounded border-slate-600 bg-slate-800 text-indigo-500 focus:ring-indigo-500"
+                                                />
+                                                <span className="text-xs text-slate-400">Vade farklı</span>
+                                            </label>
+
+                                            {useInterest && (
+                                                <input
+                                                    type="number"
+                                                    min="0.01"
+                                                    step="0.01"
+                                                    placeholder="Vade farklı toplam tutar (₺)"
+                                                    value={totalWithInterest}
+                                                    onChange={(e) => setTotalWithInterest(e.target.value)}
+                                                    className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+                                                />
+                                            )}
+
+                                            {/* Installment Summary */}
+                                            {amount && (
+                                                <div className="text-xs text-slate-400 bg-slate-900/50 p-2 rounded-lg">
+                                                    {(() => {
+                                                        const total = (useInterest && totalWithInterest) ? Number(totalWithInterest) : Number(amount);
+                                                        const per = Math.round((total / Number(installmentCount)) * 100) / 100;
+                                                        return (
+                                                            <>
+                                                                <div className="flex justify-between">
+                                                                    <span>Taksit tutarı:</span>
+                                                                    <span className="text-white font-medium">{new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(per)}</span>
                                                                 </div>
-                                                            )}
-                                                        </>
-                                                    );
-                                                })()}
-                                            </div>
-                                        )}
-                                    </>
-                                )}
-                            </div>
-                        )}
+                                                                <div className="flex justify-between mt-1">
+                                                                    <span>Toplam:</span>
+                                                                    <span className="text-white font-medium">{new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(total)}</span>
+                                                                </div>
+                                                                {useInterest && totalWithInterest && Number(totalWithInterest) > Number(amount) && (
+                                                                    <div className="flex justify-between mt-1 text-amber-400">
+                                                                        <span>Vade farkı:</span>
+                                                                        <span>{new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(Number(totalWithInterest) - Number(amount))}</span>
+                                                                    </div>
+                                                                )}
+                                                            </>
+                                                        );
+                                                    })()}
+                                                </div>
+                                            )}
+                                        </>
+                                    )}
+                                </div>
+                            )}
                         <input
                             type="datetime-local"
                             value={date}
@@ -937,12 +937,12 @@ const Wallet = ({ transactions = [], onAddTransaction, onUpdateTransaction, onDe
                             required
                         />
                         <div className="relative z-20">
-                            <input 
-                                type="text" 
-                                placeholder="Açıklama" 
-                                value={description} 
-                                onChange={(e) => setDescription(e.target.value)} 
-                                className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 touch-manipulation" 
+                            <input
+                                type="text"
+                                placeholder="Açıklama"
+                                value={description}
+                                onChange={(e) => setDescription(e.target.value)}
+                                className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 touch-manipulation"
                             />
                         </div>
 
@@ -994,75 +994,75 @@ const Wallet = ({ transactions = [], onAddTransaction, onUpdateTransaction, onDe
                                 className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-white focus:outline-none focus:border-indigo-500"
                                 required
                             />
-                            
+
                             {/* Installment Fields for Edit */}
                             {editingTransaction.type === 'expense' && (() => {
                                 const editAcc = accounts.find(a => a.id === editingTransaction.accountId);
                                 return editAcc && editAcc.type === 'credit_card';
                             })() && (
-                                <div className="p-3 bg-slate-800/50 rounded-lg border border-slate-700/50 space-y-3">
-                                    <div>
-                                        <label className="text-xs text-slate-400 block mb-1">Taksit Sayısı</label>
-                                        <select
-                                            value={editingTransaction.installmentCount || 1}
-                                            onChange={(e) => setEditingTransaction({ ...editingTransaction, installmentCount: Number(e.target.value) })}
-                                            className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-white focus:outline-none focus:border-indigo-500"
-                                        >
-                                            <option value="1">Tek Çekim</option>
-                                            {[2,3,4,5,6,7,8,9,10,11,12].map(n => (
-                                                <option key={n} value={n}>{n} Taksit</option>
-                                            ))}
-                                        </select>
+                                    <div className="p-3 bg-slate-800/50 rounded-lg border border-slate-700/50 space-y-3">
+                                        <div>
+                                            <label className="text-xs text-slate-400 block mb-1">Taksit Sayısı</label>
+                                            <select
+                                                value={editingTransaction.installmentCount || 1}
+                                                onChange={(e) => setEditingTransaction({ ...editingTransaction, installmentCount: Number(e.target.value) })}
+                                                className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-white focus:outline-none focus:border-indigo-500"
+                                            >
+                                                <option value="1">Tek Çekim</option>
+                                                {[2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(n => (
+                                                    <option key={n} value={n}>{n} Taksit</option>
+                                                ))}
+                                            </select>
+                                        </div>
+
+                                        {(editingTransaction.installmentCount || 1) > 1 && (
+                                            <>
+                                                <label className="flex items-center gap-2 cursor-pointer">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={editingTransaction.useInterest || false}
+                                                        onChange={(e) => setEditingTransaction({ ...editingTransaction, useInterest: e.target.checked })}
+                                                        className="w-4 h-4 rounded border-slate-600 bg-slate-800 text-indigo-500 focus:ring-indigo-500"
+                                                    />
+                                                    <span className="text-xs text-slate-400">Vade farklı</span>
+                                                </label>
+
+                                                {editingTransaction.useInterest && (
+                                                    <input
+                                                        type="number"
+                                                        min="0.01"
+                                                        step="0.01"
+                                                        placeholder="Vade farklı toplam tutar (₺)"
+                                                        value={editingTransaction.totalWithInterest || ''}
+                                                        onChange={(e) => setEditingTransaction({ ...editingTransaction, totalWithInterest: e.target.value })}
+                                                        className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+                                                    />
+                                                )}
+
+                                                {editingTransaction.amount && (
+                                                    <div className="text-xs text-slate-400 bg-slate-900/50 p-2 rounded-lg">
+                                                        {(() => {
+                                                            const total = (editingTransaction.useInterest && editingTransaction.totalWithInterest) ? Number(editingTransaction.totalWithInterest) : Number(editingTransaction.amount);
+                                                            const per = Math.round((total / Number(editingTransaction.installmentCount)) * 100) / 100;
+                                                            return (
+                                                                <>
+                                                                    <div className="flex justify-between">
+                                                                        <span>Taksit tutarı:</span>
+                                                                        <span className="text-white font-medium">{new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(per)}</span>
+                                                                    </div>
+                                                                    <div className="flex justify-between mt-1">
+                                                                        <span>Toplam:</span>
+                                                                        <span className="text-white font-medium">{new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(total)}</span>
+                                                                    </div>
+                                                                </>
+                                                            );
+                                                        })()}
+                                                    </div>
+                                                )}
+                                            </>
+                                        )}
                                     </div>
-                                    
-                                    {(editingTransaction.installmentCount || 1) > 1 && (
-                                        <>
-                                            <label className="flex items-center gap-2 cursor-pointer">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={editingTransaction.useInterest || false}
-                                                    onChange={(e) => setEditingTransaction({ ...editingTransaction, useInterest: e.target.checked })}
-                                                    className="w-4 h-4 rounded border-slate-600 bg-slate-800 text-indigo-500 focus:ring-indigo-500"
-                                                />
-                                                <span className="text-xs text-slate-400">Vade farklı</span>
-                                            </label>
-                                            
-                                            {editingTransaction.useInterest && (
-                                                <input
-                                                    type="number"
-                                                    min="0.01"
-                                                    step="0.01"
-                                                    placeholder="Vade farklı toplam tutar (₺)"
-                                                    value={editingTransaction.totalWithInterest || ''}
-                                                    onChange={(e) => setEditingTransaction({ ...editingTransaction, totalWithInterest: e.target.value })}
-                                                    className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
-                                                />
-                                            )}
-                                            
-                                            {editingTransaction.amount && (
-                                                <div className="text-xs text-slate-400 bg-slate-900/50 p-2 rounded-lg">
-                                                    {(() => {
-                                                        const total = (editingTransaction.useInterest && editingTransaction.totalWithInterest) ? Number(editingTransaction.totalWithInterest) : Number(editingTransaction.amount);
-                                                        const per = Math.round((total / Number(editingTransaction.installmentCount)) * 100) / 100;
-                                                        return (
-                                                            <>
-                                                                <div className="flex justify-between">
-                                                                    <span>Taksit tutarı:</span>
-                                                                    <span className="text-white font-medium">{new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(per)}</span>
-                                                                </div>
-                                                                <div className="flex justify-between mt-1">
-                                                                    <span>Toplam:</span>
-                                                                    <span className="text-white font-medium">{new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(total)}</span>
-                                                                </div>
-                                                            </>
-                                                        );
-                                                    })()}
-                                                </div>
-                                            )}
-                                        </>
-                                    )}
-                                </div>
-                            )}
+                                )}
                             <input
                                 type="datetime-local"
                                 value={editingTransaction.date}
