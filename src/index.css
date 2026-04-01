@@ -3,6 +3,11 @@
 @tailwind utilities;
 
 @layer base {
+  html {
+    /* Prevent pull-to-refresh on mobile */
+    overscroll-behavior: none;
+  }
+
   body {
     @apply bg-slate-950 text-slate-100 font-sans antialiased;
     /* Allow native scrolling to fix mobile click misalignment issues */
