@@ -836,7 +836,23 @@ const Wallet = ({ transactions = [], onAddTransaction, onUpdateTransaction, onDe
                                 )}
                             </div>
                         )}
-                        <input type="number" min="0.01" step="0.01" placeholder="Tutar (TL)" value={amount} onChange={(e) => setAmount(e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500" required />
+                        {/* Amount Input */}
+                        <div className="relative z-20">
+                            <input 
+                                type="text" 
+                                inputMode="decimal" 
+                                min="0.01" 
+                                step="0.01" 
+                                placeholder="Tutar (TL) - Örn: 150.50" 
+                                value={amount} 
+                                onChange={(e) => {
+                                    const val = e.target.value.replace(',', '.');
+                                    if(val === '' || /^\d*\.?\d*$/.test(val)) setAmount(val);
+                                }} 
+                                className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 touch-manipulation" 
+                                required 
+                            />
+                        </div>
                         
                         {/* Installment Fields - Only for credit card expenses */}
                         {type === 'expense' && (() => {
@@ -920,7 +936,15 @@ const Wallet = ({ transactions = [], onAddTransaction, onUpdateTransaction, onDe
                             className="w-full min-w-0 max-w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
                             required
                         />
-                        <input type="text" placeholder="Açıklama" value={description} onChange={(e) => setDescription(e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500" />
+                        <div className="relative z-20">
+                            <input 
+                                type="text" 
+                                placeholder="Açıklama" 
+                                value={description} 
+                                onChange={(e) => setDescription(e.target.value)} 
+                                className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 touch-manipulation" 
+                            />
+                        </div>
 
                         {type !== 'transfer' && (
                             <div className="relative">

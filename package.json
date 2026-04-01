@@ -4,9 +4,9 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "concurrently \"vite\" \"node server.js\"",
     "server": "node server.js",
-    "dev:all": "concurrently \"npm run dev\" \"npm run server\"",
+    "dev:all": "concurrently \"vite\" \"npm run server\"",
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview"
