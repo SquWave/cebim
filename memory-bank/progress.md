@@ -19,7 +19,7 @@
 ### Investment Portfolio
 - [x] Asset Types: Stocks (BIST), Funds (TEFAS), Gold, Silver, Currency
 - [x] Lot-based tracking (FIFO cost calculation)
-- [x] Real-time market data integration (Midas API, TEFAS)
+- [x] Real-time market data integration (TradingView API, Midas FX, TEFAS)
 - [x] Automatic price updates
 
 ### Analytics

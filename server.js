@@ -37,26 +37,36 @@ app.get('/api/stocks', async (req, res) => {
             return res.json(cache.stocks.data);
         }
 
-        console.log('[Backend] Fetching stock data from Midas API...');
-        const response = await fetch(MIDAS_API_URL);
+        console.log('[Backend] Fetching stock data from TradingView API...');
+        
+        const requestBody = {
+            filter: [{ left: 'exchange', operation: 'equal', right: 'BIST' }],
+            columns: ['name', 'close']
+        };
+
+        const response = await fetch('https://scanner.tradingview.com/turkey/scan', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(requestBody)
+        });
+
         if (!response.ok) {
-            console.error('[Backend] Midas API returned:', response.status);
-            return res.status(response.status).json({ error: 'Failed to fetch from Midas API' });
+            console.error('[Backend] TradingView API returned:', response.status);
+            return res.status(response.status).json({ error: 'Failed to fetch from TradingView API' });
         }
-        const text = await response.text();
-        let data;
-        try {
-            data = JSON.parse(text);
-            if (typeof data === 'string') {
-                console.log('[Backend] Detected double‑encoded JSON, parsing again');
-                data = JSON.parse(data);
-            }
-        } catch (e) {
-            console.error('[Backend] JSON parse error:', e);
-            return res.status(500).json({ error: 'Invalid JSON from Midas API' });
+
+        const json = await response.json();
+        
+        if (!json || !json.data) {
+             return res.status(500).json({ error: 'Invalid JSON format from TradingView API' });
         }
-        console.log('[Backend] Data type:', typeof data, 'Is array:', Array.isArray(data));
-        console.log('[Backend] Fetched', data.length, 'stocks');
+
+        const data = json.data.map(item => ({
+            Code: item.d[0],
+            Last: item.d[1]
+        }));
+        
+        console.log('[Backend] Fetched', data.length, 'stocks from TradingView');
         res.json(data);
     } catch (error) {
         console.error('[Backend] Error:', error.message);

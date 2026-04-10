@@ -10,6 +10,7 @@
 - **Features Added**:
     - **Withholding Tax**: Optional 17.5% tax calculation for funds.
     - **Silver Support**: Added 'Gram Gümüş' and other precious metals.
+    - **TradingView API**: Migrated BIST stock pricing logic from delayed Midas API to live TradingView Scanner.
     - **Transaction History**: Added manual delete capability for fixing data anomalies.
     - **Statistics**: Monthly P/L trends, Average holding period.
 - **Documentation**:

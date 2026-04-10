@@ -87,7 +87,7 @@ const Portfolio = ({ assets, onAddAsset, onUpdateAsset, onDeleteAsset, privacyMo
             }
             else if (asset.type === 'gold') {
                 if (assetName.includes('ALTIN') || assetName.includes('GOLD')) newPrice = rates.GOLD;
-                else if (assetName.includes('GUMUS') || assetName.includes('SILVER')) newPrice = rates.SILVER;
+                else if (assetName.includes('GÜMÜŞ') || assetName.includes('GUMUS') || assetName.includes('SILVER')) newPrice = rates.SILVER;
             }
             else if ((asset.type === 'stock' || asset.type === 'fund') && specificPrices[assetName]) {
                 newPrice = specificPrices[assetName];

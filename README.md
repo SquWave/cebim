@@ -88,8 +88,8 @@
 |----------|---------------|
 | React 19 + Vite | Node.js + Express |
 | Tailwind CSS | Firebase Firestore |
-| Recharts | Midas API (BIST, döviz) |
-| Lucide React | TEFAS (fon fiyatları) |
+| Recharts | TradingView API (BIST hisseleri) |
+| Lucide React | Midas API (Döviz, Altın), TEFAS |
 
 ## 🔒 Güvenlik ve Gizlilik
 

@@ -8,7 +8,7 @@ const API_BASE_URL = import.meta.env.PROD ? '' : 'http://localhost:3001';
 const CURRENCY_API_URL = `${API_BASE_URL}/api/fx`;
 
 // Stock data via backend proxy (bypasses CORS)
-const MIDAS_API_URL = `${API_BASE_URL}/api/stocks`;
+const STOCKS_API_URL = `${API_BASE_URL}/api/stocks`;
 
 // Fallback manual rates
 const FALLBACK_RATES = {
@@ -18,7 +18,7 @@ const FALLBACK_RATES = {
     SILVER: 108.00  // Gram Gümüş
 };
 
-// Cache for Midas Data
+// Cache for Stock Data (TradingView)
 let cachedStockData = [];
 let lastStockFetch = 0;
 const CACHE_DURATION = 1000 * 60 * 1; // 1 minute cache for live prices
@@ -180,56 +180,55 @@ export const TEFAS_FUNDS = [
     { code: 'PKT', name: 'YAPI KREDİ PORTFÖY PARA PİYASASI KATILIM SERBEST (TL) FON' }
 ];
 
-// Fetch all stocks from Midas
+// Fetch all stocks from TradingView (via backend proxy)
 // src/services/marketData.js
-export const fetchMidasStocks = async () => {
+export const fetchStockData = async () => {
     const now = Date.now();
     if (cachedStockData.length > 0 && (now - lastStockFetch < CACHE_DURATION)) {
-        console.log('[fetchMidasStocks] Using cached data');
+        console.log('[fetchStockData] Using cached data');
         return cachedStockData;
     }
 
-    console.log('[fetchMidasStocks] Fetching fresh data from backend...');
+    console.log('[fetchStockData] Fetching fresh data from backend (TradingView)...');
     try {
-        const response = await fetch(MIDAS_API_URL);
-        console.log('[fetchMidasStocks] Response status:', response.status);
+        const response = await fetch(STOCKS_API_URL);
+        console.log('[fetchStockData] Response status:', response.status);
 
-        // Backend her zaman JSON dizi döndürür → json() ile ayrıştır
+        // Backend her zaman JSON dizi döndürür
         const data = await response.json();
 
-        console.log('[fetchMidasStocks] Data type:', typeof data, 'Is array:', Array.isArray(data));
-        console.log('[fetchMidasStocks] Fetched', data.length, 'stocks');
+        console.log('[fetchStockData] Fetched', data.length, 'stocks');
         cachedStockData = data;
         lastStockFetch = now;
         return data;
     } catch (e) {
-        console.error('[fetchMidasStocks] Failed to fetch Midas data', e);
+        console.error('[fetchStockData] Failed to fetch stock data', e);
         return [];
     }
 };
 
-// Search stocks using cached Midas data
+// Search stocks using cached data
 export const searchStocks = async (query) => {
     console.log('[searchStocks] Called with query:', query);
     if (cachedStockData.length === 0) {
         console.log('[searchStocks] Cache empty, fetching...');
-        await fetchMidasStocks();
+        await fetchStockData();
         console.log('[searchStocks] Fetched data, count:', cachedStockData.length);
     }
     const q = query.toUpperCase();
     const results = cachedStockData
         .filter(item => item.Code && item.Code.startsWith(q))
         .slice(0, 5)
-        .map(item => ({ code: item.Code, name: item.Code })); // Midas data doesn't have full name, using Code
+        .map(item => ({ code: item.Code, name: item.Code })); // Using Code as name 
     console.log('[searchStocks] Results:', results);
     return results;
 };
 
-// Helper to fetch BIST data (Midas API)
+// Helper to fetch BIST data (TradingView)
 const fetchStockPrice = async (code) => {
     try {
         if (cachedStockData.length === 0) {
-            await fetchMidasStocks();
+            await fetchStockData();
         }
         const stock = cachedStockData.find(item => item.Code === code.toUpperCase());
         return stock ? stock.Last : null;
@@ -291,10 +290,10 @@ export const fetchMarketData = async (assets = []) => {
         // 2. Fetch Specific Asset Prices (Stocks & Funds) - Parallelized
         const specificPrices = {};
 
-        // Pre-fetch Midas data if there are stocks
+        // Pre-fetch stock data if there are stocks
         const hasStocks = assets.some(a => a.type === 'stock');
         if (hasStocks) {
-            await fetchMidasStocks();
+            await fetchStockData();
         }
 
         // Create an array of promises for all asset price fetches
@@ -332,6 +331,7 @@ export const fetchMarketData = async (assets = []) => {
             USD: null,
             EUR: null,
             GOLD: null,
+            SILVER: null,
             specificPrices: {},
             lastUpdated: new Date().toISOString(),
             error: true

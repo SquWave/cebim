@@ -42,6 +42,7 @@ export const useMarketData = (assets = []) => {
         }
         else if (asset.type === 'gold') {
             if (assetName.includes('ALTIN') || assetName.includes('GOLD')) return data.GOLD || 0;
+            if (assetName.includes('GÜMÜŞ') || assetName.includes('GUMUS') || assetName.includes('SILVER')) return data.SILVER || 0;
         }
         else if ((asset.type === 'stock' || asset.type === 'fund')) {
             return data.specificPrices[assetName] || 0;

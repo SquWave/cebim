@@ -67,7 +67,8 @@ const Dashboard = ({
     const rates = marketData ? {
         USD: marketData.USD,
         EUR: marketData.EUR,
-        GOLD: marketData.GOLD
+        GOLD: marketData.GOLD,
+        SILVER: marketData.SILVER
     } : null;
 
     // Render a widget by ID
