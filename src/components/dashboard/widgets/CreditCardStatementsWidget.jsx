@@ -94,8 +94,19 @@ const CreditCardStatementsWidget = ({ transactions = [], accounts = [], privacyM
             const startStr = currentPeriodStart.toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' });
             const endStr = currentPeriodEnd.toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' });
 
-            // Calculate available limit (limit - remaining installment debt - current period single payments)
+            // Calculate available limit (limit - remaining installment debt - current period single payments + current period income)
             let totalRemainingDebt = 0;
+            let currentPeriodIncome = 0; // Bu dönem gelen iadeler limit açsın
+            
+            // Re-filter incomes for the current period specifically
+            transactions.filter(t => t.accountId === card.id && t.type === 'income').forEach(t => {
+                const td = new Date(t.date);
+                // İadeler sadece güncel hesaptaysa limiti geri getirir
+                if (td >= currentPeriodStart && td <= currentPeriodEnd) {
+                    currentPeriodIncome += Number(t.amount);
+                }
+            });
+
             cardTxs.filter(t => (Number(t.installmentCount) || 1) > 1).forEach(t => {
                 const iCount = Number(t.installmentCount) || 1;
                 const totalAmt = Number(t.totalWithInterest) || Number(t.amount);
@@ -105,7 +116,8 @@ const CreditCardStatementsWidget = ({ transactions = [], accounts = [], privacyM
                 const paid = Math.min(Math.max(paidMonths, 0), iCount);
                 totalRemainingDebt += Math.max(totalAmt - (paid * perInst), 0);
             });
-            const availableLimit = limit - totalRemainingDebt - singleTotal;
+
+            const availableLimit = limit - totalRemainingDebt - singleTotal + currentPeriodIncome;
 
             result[card.id] = {
                 currentTotal,

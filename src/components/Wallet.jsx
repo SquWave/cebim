@@ -178,7 +178,7 @@ const Wallet = ({ transactions = [], onAddTransaction, onUpdateTransaction, onDe
                 // Calculate remaining installment debt for all installment transactions
                 let totalRemainingDebt = 0;
                 let currentPeriodNonInstallment = 0;
-                let currentPeriodIncome = 0; // İadeler sadece güncel dönem limiti için geçerli
+                let currentPeriodIncome = 0; // Sadece bu dönemki iadeler/gelirler limit arttırır
 
                 safeTransactions
                     .filter(t => t.accountId === acc.id)
@@ -199,15 +199,13 @@ const Wallet = ({ transactions = [], onAddTransaction, onUpdateTransaction, onDe
                                 }
                             }
                         } else if (t.type === 'income') {
-                            // Refunds added to credit card (sadece güncel dönemde ise geçerli)
-                            // Aksi halde sistem hesap kesimini geçtiğinde limiti eski iadeler yüzünden şişirir
+                            // Gelir (İade) geldi ise ve GÜNCEL DÖNEMDE (hesap kesiminden sonra) ise limitimizi geri artıralım
                             if (new Date(t.date) >= periodStart) {
                                 currentPeriodIncome += Number(t.amount);
                             }
                         }
                     });
 
-                // The balance is limit minus total debts, plus current period refunds
                 balances[acc.id] = limit - totalRemainingDebt - currentPeriodNonInstallment + currentPeriodIncome;
             } else {
                 // Regular account: initial balance +/- transactions
