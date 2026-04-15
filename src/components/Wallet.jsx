@@ -178,27 +178,37 @@ const Wallet = ({ transactions = [], onAddTransaction, onUpdateTransaction, onDe
                 // Calculate remaining installment debt for all installment transactions
                 let totalRemainingDebt = 0;
                 let currentPeriodNonInstallment = 0;
+                let currentPeriodIncome = 0; // İadeler sadece güncel dönem limiti için geçerli
 
                 safeTransactions
-                    .filter(t => t.accountId === acc.id && t.type === 'expense')
+                    .filter(t => t.accountId === acc.id)
                     .forEach(t => {
-                        const iCount = Number(t.installmentCount) || 1;
-                        if (iCount > 1) {
-                            // Installment transaction
-                            const totalAmount = Number(t.totalWithInterest) || Number(t.amount);
-                            const perInstallment = Number(t.installmentAmount) || (totalAmount / iCount);
-                            const paid = Math.min(getPaidInstallments(t.date, statDay), iCount);
-                            const remaining = totalAmount - (paid * perInstallment);
-                            totalRemainingDebt += Math.max(remaining, 0);
-                        } else {
-                            // Single payment - only affects current period
+                        if (t.type === 'expense') {
+                            const iCount = Number(t.installmentCount) || 1;
+                            if (iCount > 1) {
+                                // Installment transaction
+                                const totalAmount = Number(t.totalWithInterest) || Number(t.amount);
+                                const perInstallment = Number(t.installmentAmount) || (totalAmount / iCount);
+                                const paid = Math.min(getPaidInstallments(t.date, statDay), iCount);
+                                const remaining = totalAmount - (paid * perInstallment);
+                                totalRemainingDebt += Math.max(remaining, 0);
+                            } else {
+                                // Single payment - only affects current period
+                                if (new Date(t.date) >= periodStart) {
+                                    currentPeriodNonInstallment += Number(t.amount);
+                                }
+                            }
+                        } else if (t.type === 'income') {
+                            // Refunds added to credit card (sadece güncel dönemde ise geçerli)
+                            // Aksi halde sistem hesap kesimini geçtiğinde limiti eski iadeler yüzünden şişirir
                             if (new Date(t.date) >= periodStart) {
-                                currentPeriodNonInstallment += Number(t.amount);
+                                currentPeriodIncome += Number(t.amount);
                             }
                         }
                     });
 
-                balances[acc.id] = limit - totalRemainingDebt - currentPeriodNonInstallment;
+                // The balance is limit minus total debts, plus current period refunds
+                balances[acc.id] = limit - totalRemainingDebt - currentPeriodNonInstallment + currentPeriodIncome;
             } else {
                 // Regular account: initial balance +/- transactions
                 balances[acc.id] = Number(acc.initialBalance) || 0;
