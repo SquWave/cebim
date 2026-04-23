@@ -132,13 +132,29 @@ const CreditCardStatements = ({ transactions = [], accounts = [], privacyMode = 
                     .filter(t => (Number(t.installmentCount) || 1) > 1)
                     .reduce((sum, t) => sum + getInstallmentContribution(t, period.start, statementDay), 0);
 
+                // Incomes (refunds) in this period
+                const periodIncome = transactions
+                    .filter(t => t.accountId === card.id && t.type === 'income')
+                    .filter(t => {
+                        const td = new Date(t.date);
+                        return td >= period.start && td <= period.end;
+                    })
+                    .reduce((sum, t) => sum + Number(t.amount), 0);
+
                 // Transactions originating in this period
                 const originTxCount = cardTxs.filter(t => {
                     const td = new Date(t.date);
                     return td >= period.start && td <= period.end;
                 }).length;
 
-                const total = Math.round((singleTotal + installmentTotal) * 100) / 100;
+                const incomeTxCount = transactions
+                    .filter(t => t.accountId === card.id && t.type === 'income')
+                    .filter(t => {
+                        const td = new Date(t.date);
+                        return td >= period.start && td <= period.end;
+                    }).length;
+
+                const total = Math.round((singleTotal + installmentTotal - periodIncome) * 100) / 100;
 
                 const startStr = period.start.toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' });
                 const endStr = period.end.toLocaleDateString('tr-TR', { day: 'numeric', month: 'short', year: 'numeric' });
@@ -149,7 +165,8 @@ const CreditCardStatements = ({ transactions = [], accounts = [], privacyMode = 
                     total,
                     singleTotal: Math.round(singleTotal * 100) / 100,
                     installmentTotal: Math.round(installmentTotal * 100) / 100,
-                    txCount: originTxCount,
+                    incomeTotal: Math.round(periodIncome * 100) / 100,
+                    txCount: originTxCount + incomeTxCount,
                     isCurrent: period.type === 'current',
                     isFuture: period.type === 'future'
                 };
@@ -285,6 +302,11 @@ const CreditCardStatements = ({ transactions = [], accounts = [], privacyMode = 
                                                             {period.installmentTotal > 0 && (
                                                                 <span className="text-[10px] text-purple-400/70">
                                                                     • Taksit: {privacyMode ? '₺***' : formatCurrency(period.installmentTotal)}
+                                                                </span>
+                                                            )}
+                                                            {period.incomeTotal > 0 && (
+                                                                <span className="text-[10px] text-emerald-400/70">
+                                                                    • İade/Gelir: {privacyMode ? '₺***' : formatCurrency(period.incomeTotal)}
                                                                 </span>
                                                             )}
                                                         </div>

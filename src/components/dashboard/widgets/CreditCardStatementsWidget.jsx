@@ -75,7 +75,15 @@ const CreditCardStatementsWidget = ({ transactions = [], accounts = [], privacyM
                 .filter(t => (Number(t.installmentCount) || 1) > 1)
                 .reduce((sum, t) => sum + getInstallmentContribution(t, currentPeriodStart, statementDay), 0);
 
-            const currentTotal = Math.round((singleTotal + installmentTotal) * 100) / 100;
+            const currentIncome = transactions
+                .filter(t => t.accountId === card.id && t.type === 'income')
+                .filter(t => {
+                    const td = new Date(t.date);
+                    return td >= currentPeriodStart && td <= currentPeriodEnd;
+                })
+                .reduce((sum, t) => sum + Number(t.amount), 0);
+
+            const currentTotal = Math.round((singleTotal + installmentTotal - currentIncome) * 100) / 100;
 
             // Previous period for comparison
             const prevStart = shiftPeriod(currentPeriodStart, -1, statementDay);
@@ -89,7 +97,16 @@ const CreditCardStatementsWidget = ({ transactions = [], accounts = [], privacyM
             const prevInstallment = cardTxs
                 .filter(t => (Number(t.installmentCount) || 1) > 1)
                 .reduce((sum, t) => sum + getInstallmentContribution(t, prevStart, statementDay), 0);
-            const prevTotal = Math.round((prevSingle + prevInstallment) * 100) / 100;
+            
+            const prevIncome = transactions
+                .filter(t => t.accountId === card.id && t.type === 'income')
+                .filter(t => {
+                    const td = new Date(t.date);
+                    return td >= prevStart && td <= prevEnd;
+                })
+                .reduce((sum, t) => sum + Number(t.amount), 0);
+
+            const prevTotal = Math.round((prevSingle + prevInstallment - prevIncome) * 100) / 100;
 
             const startStr = currentPeriodStart.toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' });
             const endStr = currentPeriodEnd.toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' });
