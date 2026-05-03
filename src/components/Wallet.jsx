@@ -74,17 +74,54 @@ const Wallet = ({ transactions = [], onAddTransaction, onUpdateTransaction, onDe
         const statementDay = parseInt(acc.statementDay) || 1;
 
         // Get transactions for this card
-        const cardTransactions = safeTransactions.filter(t => t.accountId === acc.id && t.type === 'expense');
+        const cardTransactions = safeTransactions.filter(t => t.accountId === acc.id && (t.type === 'expense' || t.type === 'income'));
         if (cardTransactions.length === 0) return [];
 
-        // Helper: get effective period amount for a transaction
-        // For installment transactions, only count the installment amount per period
-        const getPeriodAmount = (t) => {
-            const iCount = Number(t.installmentCount) || 1;
-            if (iCount > 1) {
-                return Number(t.installmentAmount) || (Number(t.amount) / iCount);
+        const getPeriodStartForDate = (date) => {
+            const d = new Date(date);
+            const day = statementDay;
+            const lastDay = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+            const actualDay = Math.min(day, lastDay);
+
+            if (d.getDate() < actualDay) {
+                const pm = d.getMonth() === 0 ? 11 : d.getMonth() - 1;
+                const py = d.getMonth() === 0 ? d.getFullYear() - 1 : d.getFullYear();
+                const prevLastDay = new Date(py, pm + 1, 0).getDate();
+                return new Date(py, pm, Math.min(day, prevLastDay), 0, 0, 0, 0);
             }
-            return Number(t.amount);
+            return new Date(d.getFullYear(), d.getMonth(), actualDay, 0, 0, 0, 0);
+        };
+
+        const getInstallmentContribution = (tx, periodStart) => {
+            const iCount = Number(tx.installmentCount) || 1;
+            if (iCount <= 1) return 0;
+
+            const perInstallment = Number(tx.installmentAmount) || (Number(tx.amount) / iCount);
+            const txPeriodStart = getPeriodStartForDate(tx.date);
+
+            const monthsDiff = (periodStart.getFullYear() - txPeriodStart.getFullYear()) * 12 +
+                              (periodStart.getMonth() - txPeriodStart.getMonth());
+
+            if (monthsDiff < 0 || monthsDiff >= iCount) return 0;
+            return perInstallment;
+        };
+
+        const calculatePeriodTotal = (pStart, pEnd) => {
+            return cardTransactions.reduce((sum, t) => {
+                const txDate = new Date(t.date);
+                const isTxInPeriod = txDate >= pStart && txDate <= pEnd;
+
+                if (t.type === 'income') {
+                    return isTxInPeriod ? sum - (Number(t.amount) || 0) : sum;
+                } else {
+                    const iCount = Number(t.installmentCount) || 1;
+                    if (iCount <= 1) {
+                        return isTxInPeriod ? sum + Number(t.amount) : sum;
+                    } else {
+                        return sum + getInstallmentContribution(t, pStart);
+                    }
+                }
+            }, 0);
         };
 
         // Find the earliest transaction date
@@ -97,7 +134,7 @@ const Wallet = ({ transactions = [], onAddTransaction, onUpdateTransaction, onDe
 
         // Current period
         const currentPeriodTxs = cardTransactions.filter(t => new Date(t.date) >= periodStart && new Date(t.date) <= periodEnd);
-        const currentPeriodExpenses = currentPeriodTxs.reduce((sum, t) => sum + getPeriodAmount(t), 0);
+        const currentPeriodExpenses = calculatePeriodTotal(periodStart, periodEnd);
 
         periods.push({
             label: 'Bu Dönem',
@@ -118,14 +155,14 @@ const Wallet = ({ transactions = [], onAddTransaction, onUpdateTransaction, onDe
             const actualDay = Math.min(statementDay, lastDayOfMonth);
             periodStart = new Date(prevYear, prevMonth, actualDay, 0, 0, 0, 0);
 
-            if (periodStart < earliest) break;
-
             const periodTxs = cardTransactions.filter(t => new Date(t.date) >= periodStart && new Date(t.date) <= periodEnd);
-            const periodExpenses = periodTxs.reduce((sum, t) => sum + getPeriodAmount(t), 0);
+            const periodExpenses = calculatePeriodTotal(periodStart, periodEnd);
 
-            if (periodExpenses > 0) {
+            if (periodStart < earliest && periodExpenses <= 0) break;
+
+            if (periodExpenses > 0 || periodTxs.length > 0) {
                 periods.push({
-                    label: periodStart.toLocaleDateString('tr-TR', { month: 'long', year: 'numeric' }),
+                    label: periodEnd.toLocaleDateString('tr-TR', { month: 'long', year: 'numeric' }),
                     start: periodStart,
                     end: periodEnd,
                     total: periodExpenses,
