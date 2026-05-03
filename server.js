@@ -1,7 +1,9 @@
 import express from 'express';
 import cors from 'cors';
+import dns from 'dns';
 
-
+// Fix for Node.js fetch ENOTFOUND errors on some networks (prefer IPv4)
+dns.setDefaultResultOrder('ipv4first');
 const app = express();
 const PORT = 3001;
 
@@ -119,50 +121,24 @@ app.get('/api/fund/:code', async (req, res) => {
         }
 
         console.log(`[Backend] Fetching fund data for ${fundCode}...`);
-        const response = await fetch(`https://www.tefas.gov.tr/FonAnaliz.aspx?FonKod=${fundCode}`);
+        const response = await fetch(`https://www.tefas.gov.tr/tr/fon-detayli-analiz/${fundCode}`);
         if (!response.ok) {
             return res.status(response.status).json({ error: 'Failed to fetch from TEFAS' });
         }
         const text = await response.text();
 
-        // Extract data from Highcharts script
-        const scriptRegex = /<script[^>]*>([\s\S]*?)<\/script>/gi;
-        let match;
-        let chartScript = null;
+        // Extract price from the Next.js rendered HTML
+        // Looking for "Son Fiyat (TL)" followed by the price in the next <p> tag
+        const priceRegex = /Son Fiyat \(TL\)<\/p>.*?<p[^>]*>([\d,\.]+)<\/p>/s;
+        const match = text.match(priceRegex);
 
-        while ((match = scriptRegex.exec(text)) !== null) {
-            if (match[1].includes('chartMainContent_FonFiyatGrafik')) {
-                chartScript = match[1];
-                break;
-            }
+        if (!match || !match[1]) {
+            return res.status(404).json({ error: 'Price data not found in HTML' });
         }
 
-        if (!chartScript) {
-            return res.status(404).json({ error: 'Chart data not found' });
-        }
-
-        // Robust extraction using indexOf
-        const seriesIndex = chartScript.indexOf('series:');
-        if (seriesIndex === -1) return res.status(404).json({ error: 'Series not found' });
-
-        const dataStartIndex = chartScript.indexOf('"data":', seriesIndex);
-        if (dataStartIndex === -1) return res.status(404).json({ error: 'Data not found' });
-
-        const arrayStartIndex = chartScript.indexOf('[', dataStartIndex);
-        const arrayEndIndex = chartScript.indexOf(']', arrayStartIndex);
-
-        if (arrayStartIndex === -1 || arrayEndIndex === -1) {
-            return res.status(404).json({ error: 'Data array malformed' });
-        }
-
-        const dataStr = chartScript.substring(arrayStartIndex + 1, arrayEndIndex);
-        const values = dataStr.split(',').map(v => parseFloat(v.trim()));
-
-        if (values.length === 0) {
-            return res.status(404).json({ error: 'No price data found' });
-        }
-
-        const lastPrice = values[values.length - 1];
+        // Convert Turkish locale number formatting (e.g., 15,033866 to 15.033866 or 1.234,56 to 1234.56)
+        // Remove all dots (thousands separator), then replace comma with dot (decimal separator)
+        const lastPrice = parseFloat(match[1].replace(/\./g, '').replace(',', '.'));
         console.log(`[Backend] Found price for ${fundCode}: ${lastPrice}`);
 
         const responseData = {

@@ -162,7 +162,7 @@ const Settings = ({ showWithholdingTax = false, setShowWithholdingTax }) => {
             </div>
 
             <div className="text-center text-xs text-slate-600 mt-8">
-                Cebim v1.7.4 • Güvenli Bağlantı
+                Cebim v1.7.5 • Güvenli Bağlantı
             </div>
 
             <div className="mt-8">
