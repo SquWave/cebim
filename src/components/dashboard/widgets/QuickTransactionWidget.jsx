@@ -145,7 +145,7 @@ const QuickTransactionWidget = ({
                                 required
                             >
                                 <option value="">Kaynak</option>
-                                {accounts.filter(acc => acc.id !== formData.toAccountId).map(acc => (
+                                {accounts.filter(acc => acc.id !== formData.toAccountId && acc.type !== 'credit_card').map(acc => (
                                     <option key={acc.id} value={acc.id}>{acc.name}</option>
                                 ))}
                             </select>
@@ -157,7 +157,7 @@ const QuickTransactionWidget = ({
                                 required
                             >
                                 <option value="">Hedef</option>
-                                {accounts.filter(acc => acc.id !== formData.accountId).map(acc => (
+                                {accounts.filter(acc => acc.id !== formData.accountId && acc.type !== 'credit_card').map(acc => (
                                     <option key={acc.id} value={acc.id}>{acc.name}</option>
                                 ))}
                             </select>
@@ -170,7 +170,7 @@ const QuickTransactionWidget = ({
                             required
                         >
                             <option value="">Hesap Seç</option>
-                            {accounts.map(acc => (
+                            {accounts.filter(acc => formData.type === 'transfer' ? acc.type !== 'credit_card' : true).map(acc => (
                                 <option key={acc.id} value={acc.id}>{acc.name}</option>
                             ))}
                         </select>

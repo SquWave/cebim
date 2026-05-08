@@ -17,12 +17,22 @@ const WalletAnalysis = ({ transactions = [], categories = [], accounts = [], pri
         return filterTransactionsByDateRange(transactions, start, end);
     }, [transactions, dateFilter, customRange]);
 
-    // Calculate Global Current Balance
+    // Calculate Global Current Balance (Cash only)
     const currentBalance = useMemo(() => {
-        let total = accounts.reduce((sum, acc) => sum + (Number(acc.initialBalance) || 0), 0);
+        let total = accounts
+            .filter(acc => acc.type !== 'credit_card')
+            .reduce((sum, acc) => sum + (Number(acc.initialBalance) || 0), 0);
+            
         transactions.forEach(t => {
-            if (t.type === 'income') total += Number(t.amount);
-            else if (t.type === 'expense') total -= Number(t.amount);
+            const isFromCC = t.accountId && accounts.find(a => a.id === t.accountId)?.type === 'credit_card';
+            const isToCC = t.toAccountId && accounts.find(a => a.id === t.toAccountId)?.type === 'credit_card';
+
+            if (t.type === 'income' && !isFromCC) total += Number(t.amount);
+            else if (t.type === 'expense' && !isFromCC) total -= Number(t.amount);
+            else if (t.type === 'transfer') {
+                if (!isFromCC && isToCC) total -= Number(t.amount); // Nakitten kredi kartı ödemesi
+                else if (isFromCC && !isToCC) total += Number(t.amount); // Kredi kartından nakite aktarım
+            }
         });
         return total;
     }, [accounts, transactions]);
@@ -58,7 +68,7 @@ const WalletAnalysis = ({ transactions = [], categories = [], accounts = [], pri
             {/* Charts */}
             <div className="space-y-6">
                 {/* Trend Chart */}
-                <TrendChart transactions={filteredTransactions} currentBalance={currentBalance} privacyMode={privacyMode} />
+                <TrendChart transactions={filteredTransactions} accounts={accounts} currentBalance={currentBalance} privacyMode={privacyMode} />
 
                 {/* Spending Distribution */}
                 <SpendingCharts transactions={filteredTransactions} categories={categories} dateFilter={dateFilter} customRange={customRange} privacyMode={privacyMode} />

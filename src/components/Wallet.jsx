@@ -859,7 +859,7 @@ const Wallet = ({ transactions = [], onAddTransaction, onUpdateTransaction, onDe
                                         className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-white focus:outline-none focus:border-indigo-500"
                                     >
                                         <option value="">Seçiniz...</option>
-                                        {accounts.map(acc => (
+                                        {accounts.filter(acc => type === 'transfer' ? acc.type !== 'credit_card' : true).map(acc => (
                                             <option key={acc.id} value={acc.id}>{acc.name}</option>
                                         ))}
                                     </select>
@@ -873,7 +873,7 @@ const Wallet = ({ transactions = [], onAddTransaction, onUpdateTransaction, onDe
                                             className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-white focus:outline-none focus:border-indigo-500"
                                         >
                                             <option value="">Seçiniz...</option>
-                                            {accounts.filter(a => a.id !== selectedAccountId).map(acc => (
+                                            {accounts.filter(a => a.id !== selectedAccountId && a.type !== 'credit_card').map(acc => (
                                                 <option key={acc.id} value={acc.id}>{acc.name}</option>
                                             ))}
                                         </select>
@@ -1149,7 +1149,7 @@ const Wallet = ({ transactions = [], onAddTransaction, onUpdateTransaction, onDe
                                         className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-sm text-white focus:outline-none focus:border-indigo-500"
                                     >
                                         <option value="">Seçiniz...</option>
-                                        {accounts.map(acc => (
+                                        {accounts.filter(acc => editingTransaction.type === 'transfer' ? acc.type !== 'credit_card' : true).map(acc => (
                                             <option key={acc.id} value={acc.id}>{acc.name}</option>
                                         ))}
                                     </select>
@@ -1163,7 +1163,7 @@ const Wallet = ({ transactions = [], onAddTransaction, onUpdateTransaction, onDe
                                             className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-sm text-white focus:outline-none focus:border-indigo-500"
                                         >
                                             <option value="">Seçiniz...</option>
-                                            {accounts.filter(a => a.id !== editingTransaction.accountId).map(acc => (
+                                            {accounts.filter(a => a.id !== editingTransaction.accountId && a.type !== 'credit_card').map(acc => (
                                                 <option key={acc.id} value={acc.id}>{acc.name}</option>
                                             ))}
                                         </select>

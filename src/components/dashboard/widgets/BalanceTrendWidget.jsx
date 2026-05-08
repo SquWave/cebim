@@ -5,7 +5,7 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
  * Balance Trend Widget
  * Shows last 30 days balance trend (compact version)
  */
-const BalanceTrendWidget = ({ transactions = [], currentBalance = 0, privacyMode = false }) => {
+const BalanceTrendWidget = ({ transactions = [], accounts = [], currentBalance = 0, privacyMode = false }) => {
     const safeNumber = (val) => {
         if (typeof val === 'number') return val;
         if (!val) return 0;
@@ -37,8 +37,20 @@ const BalanceTrendWidget = ({ transactions = [], currentBalance = 0, privacyMode
             const dateKey = new Date(t.date).toISOString().split('T')[0];
             if (!transactionsByDate[dateKey]) transactionsByDate[dateKey] = { income: 0, expense: 0 };
 
-            if (t.type === 'income') transactionsByDate[dateKey].income += safeNumber(t.amount);
-            else if (t.type === 'expense') transactionsByDate[dateKey].expense += safeNumber(t.amount);
+            const isFromCC = t.accountId && accounts.find(a => a.id === t.accountId)?.type === 'credit_card';
+            const isToCC = t.toAccountId && accounts.find(a => a.id === t.toAccountId)?.type === 'credit_card';
+
+            if (t.type === 'income' && !isFromCC) {
+                transactionsByDate[dateKey].income += safeNumber(t.amount);
+            } else if (t.type === 'expense' && !isFromCC) {
+                transactionsByDate[dateKey].expense += safeNumber(t.amount);
+            } else if (t.type === 'transfer') {
+                if (!isFromCC && isToCC) {
+                    transactionsByDate[dateKey].expense += safeNumber(t.amount);
+                } else if (isFromCC && !isToCC) {
+                    transactionsByDate[dateKey].income += safeNumber(t.amount);
+                }
+            }
         });
 
         const trendData = [];

@@ -77,7 +77,7 @@ const Dashboard = ({
             case 'market_rates':
                 return <MarketRatesWidget key={widgetId} rates={rates} />;
             case 'balance_trend':
-                return <BalanceTrendWidget key={widgetId} transactions={transactions} currentBalance={totalCash} privacyMode={privacyMode} />;
+                return <BalanceTrendWidget key={widgetId} transactions={transactions} accounts={accounts} currentBalance={totalCash} privacyMode={privacyMode} />;
             case 'cash_flow':
                 return <CashFlowWidget key={widgetId} transactions={transactions} privacyMode={privacyMode} />;
             case 'spending_distribution':
