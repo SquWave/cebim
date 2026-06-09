@@ -124,12 +124,12 @@ const TrendChart = ({ transactions = [], accounts = [], currentBalance = 0, priv
                 <div>
                     <h3 className="text-lg font-semibold text-white">Bakiye Eğilimi</h3>
                 </div>
-                <div className={`text-right ${totalChange >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                    <div className="text-xl font-bold">
-                        {privacyMode ? '₺***' : `${totalChange >= 0 ? '+' : ''}${new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(totalChange)}`}
+                <div className="text-right">
+                    <div className="text-xl font-bold text-white">
+                        {privacyMode ? '₺***' : new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(currentBalance)}
                     </div>
-                    <div className="text-xs font-medium bg-slate-900/50 px-2 py-1 rounded-lg inline-block">
-                        {privacyMode ? '***' : `%${percentageChange}`}
+                    <div className={`text-xs font-medium px-2 py-1 rounded-lg inline-block mt-1 ${totalChange >= 0 ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'}`}>
+                        {privacyMode ? '***' : `${totalChange >= 0 ? '+' : ''}%${percentageChange}`}
                     </div>
                 </div>
             </div>

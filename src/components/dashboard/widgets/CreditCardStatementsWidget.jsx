@@ -2,52 +2,87 @@ import React, { useMemo, useState } from 'react';
 import { CreditCard, ChevronDown, ChevronRight } from 'lucide-react';
 import { formatCurrency } from '../../../utils/formatters';
 
+const getPeriodForDate = (date, statementDay) => {
+    const d = new Date(date);
+    const day = parseInt(statementDay) || 1;
+    const m = d.getMonth();
+    const y = d.getFullYear();
+    const lastDay = new Date(y, m + 1, 0).getDate();
+    const actualDay = Math.min(day, lastDay);
+
+    if (d.getDate() <= actualDay) {
+        return { month: m, year: y };
+    } else {
+        let nextM = m + 1;
+        let nextY = y;
+        if (nextM > 11) { nextM = 0; nextY++; }
+        return { month: nextM, year: nextY };
+    }
+};
+
+const getPeriodBounds = (periodDef, statementDay) => {
+    const day = parseInt(statementDay) || 1;
+    const { month, year } = periodDef;
+
+    const endLastDay = new Date(year, month + 1, 0).getDate();
+    const endTargetDay = Math.min(day, endLastDay);
+    const end = new Date(year, month, endTargetDay, 23, 59, 59, 999);
+
+    let startMonth = month - 1;
+    let startYear = year;
+    if (startMonth < 0) { startMonth = 11; startYear--; }
+    
+    const startLastDay = new Date(startYear, startMonth + 1, 0).getDate();
+    const startTargetDay = Math.min(day, startLastDay);
+    const start = new Date(startYear, startMonth, startTargetDay + 1, 0, 0, 0, 0);
+
+    return { start, end };
+};
+
 const CreditCardStatementsWidget = ({ transactions = [], accounts = [], privacyMode = false }) => {
     const [expandedCard, setExpandedCard] = useState(null);
 
     const creditCards = accounts.filter(a => a.type === 'credit_card');
 
     const getPeriodStartForDate = (date, statementDay) => {
-        const d = new Date(date);
-        const day = parseInt(statementDay) || 1;
-        const lastDay = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
-        const actualDay = Math.min(day, lastDay);
-        if (d.getDate() < actualDay) {
-            const pm = d.getMonth() === 0 ? 11 : d.getMonth() - 1;
-            const py = d.getMonth() === 0 ? d.getFullYear() - 1 : d.getFullYear();
-            const prevLastDay = new Date(py, pm + 1, 0).getDate();
-            return new Date(py, pm, Math.min(day, prevLastDay), 0, 0, 0, 0);
-        }
-        return new Date(d.getFullYear(), d.getMonth(), actualDay, 0, 0, 0, 0);
+        const periodDef = getPeriodForDate(date, statementDay);
+        return getPeriodBounds(periodDef, statementDay).start;
     };
 
     const getPeriodEnd = (periodStart, statementDay) => {
-        const day = parseInt(statementDay) || 1;
-        let endMonth = periodStart.getMonth() + 1;
-        let endYear = periodStart.getFullYear();
-        if (endMonth > 11) { endMonth -= 12; endYear++; }
-        const lastDayOfEndMonth = new Date(endYear, endMonth + 1, 0).getDate();
-        const periodEnd = new Date(endYear, endMonth, Math.min(day, lastDayOfEndMonth), 0, 0, 0, 0);
-        periodEnd.setMilliseconds(-1);
-        return periodEnd;
+        const d = new Date(periodStart);
+        d.setDate(d.getDate() + 5);
+        const periodDef = getPeriodForDate(d, statementDay);
+        return getPeriodBounds(periodDef, statementDay).end;
     };
 
     const shiftPeriod = (periodStart, monthDelta, statementDay) => {
-        const day = parseInt(statementDay) || 1;
-        let newMonth = periodStart.getMonth() + monthDelta;
-        let newYear = periodStart.getFullYear();
+        const d = new Date(periodStart);
+        d.setDate(d.getDate() + 5);
+        const periodDef = getPeriodForDate(d, statementDay);
+        
+        let newMonth = periodDef.month + monthDelta;
+        let newYear = periodDef.year;
         while (newMonth < 0) { newMonth += 12; newYear--; }
         while (newMonth > 11) { newMonth -= 12; newYear++; }
-        const lastDay = new Date(newYear, newMonth + 1, 0).getDate();
-        return new Date(newYear, newMonth, Math.min(day, lastDay), 0, 0, 0, 0);
+        
+        return getPeriodBounds({ month: newMonth, year: newYear }, statementDay).start;
     };
 
     const getInstallmentContribution = (tx, periodStart, statementDay) => {
         const iCount = Number(tx.installmentCount) || 1;
         if (iCount <= 1) return 0;
         const perInstallment = Number(tx.installmentAmount) || (Number(tx.amount) / iCount);
-        const txPeriodStart = getPeriodStartForDate(tx.date, statementDay);
-        const monthsDiff = (periodStart.getFullYear() - txPeriodStart.getFullYear()) * 12 + (periodStart.getMonth() - txPeriodStart.getMonth());
+        
+        const txPeriodDef = getPeriodForDate(tx.date, statementDay);
+        
+        const d = new Date(periodStart);
+        d.setDate(d.getDate() + 5);
+        const currentPeriodDef = getPeriodForDate(d, statementDay);
+        
+        const monthsDiff = (currentPeriodDef.year - txPeriodDef.year) * 12 +
+                         (currentPeriodDef.month - txPeriodDef.month);
+        
         if (monthsDiff < 0 || monthsDiff >= iCount) return 0;
         return perInstallment;
     };
@@ -128,8 +163,14 @@ const CreditCardStatementsWidget = ({ transactions = [], accounts = [], privacyM
                 const iCount = Number(t.installmentCount) || 1;
                 const totalAmt = Number(t.totalWithInterest) || Number(t.amount);
                 const perInst = Number(t.installmentAmount) || (totalAmt / iCount);
-                const txPS = getPeriodStartForDate(t.date, statementDay);
-                const paidMonths = (currentPeriodStart.getFullYear() - txPS.getFullYear()) * 12 + (currentPeriodStart.getMonth() - txPS.getMonth());
+                
+                const txPeriodDef = getPeriodForDate(t.date, statementDay);
+                const d = new Date(currentPeriodStart);
+                d.setDate(d.getDate() + 5);
+                const currentPeriodDef = getPeriodForDate(d, statementDay);
+                
+                const paidMonths = (currentPeriodDef.year - txPeriodDef.year) * 12 + 
+                                 (currentPeriodDef.month - txPeriodDef.month);
                 const paid = Math.min(Math.max(paidMonths, 0), iCount);
                 totalRemainingDebt += Math.max(totalAmt - (paid * perInst), 0);
             });

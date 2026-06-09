@@ -108,8 +108,8 @@ const BalanceTrendWidget = ({ transactions = [], accounts = [], currentBalance =
         <div className="bg-slate-900 rounded-xl p-4 border border-slate-800">
             <div className="flex justify-between items-center mb-3">
                 <h3 className="text-sm font-semibold text-white">Bakiye Eğilimi</h3>
-                <div className={`text-xs font-medium px-2 py-1 rounded ${totalChange >= 0 ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'}`}>
-                    {privacyMode ? '***' : `${totalChange >= 0 ? '+' : ''}${new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(totalChange)}`}
+                <div className="text-sm font-medium text-white">
+                    {privacyMode ? '₺***' : new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(currentBalance)}
                 </div>
             </div>
 

@@ -1,6 +1,43 @@
 import React, { useState, useMemo } from 'react';
-import { Plus, Trash2, ArrowUpCircle, ArrowDownCircle, Wallet as WalletIcon, CreditCard, Building2, ArrowRightLeft, Pencil, X, Check, HandCoins, Home, Utensils, Bus, Car, ShoppingBag, Film, HeartPulse, ChartNoAxesCombined, BanknoteArrowDown, IterationCw, ReceiptText, Filter, Calendar } from 'lucide-react';
+import { Plus, Trash2, ArrowUpCircle, ArrowDownCircle, Wallet as WalletIcon, CreditCard, Building2, ArrowRightLeft, Pencil, X, Check, HandCoins, Home, Utensils, Bus, Car, ShoppingBag, Film, HeartPulse, ChartNoAxesCombined, BanknoteArrowDown, IterationCw, ReceiptText, Filter, Calendar, Search } from 'lucide-react';
 import { formatDateForInput } from '../utils/formatters';
+
+const getPeriodForDate = (date, statementDay) => {
+    const d = new Date(date);
+    const day = parseInt(statementDay) || 1;
+    const m = d.getMonth();
+    const y = d.getFullYear();
+    const lastDay = new Date(y, m + 1, 0).getDate();
+    const actualDay = Math.min(day, lastDay);
+
+    if (d.getDate() <= actualDay) {
+        return { month: m, year: y };
+    } else {
+        let nextM = m + 1;
+        let nextY = y;
+        if (nextM > 11) { nextM = 0; nextY++; }
+        return { month: nextM, year: nextY };
+    }
+};
+
+const getPeriodBounds = (periodDef, statementDay) => {
+    const day = parseInt(statementDay) || 1;
+    const { month, year } = periodDef;
+
+    const endLastDay = new Date(year, month + 1, 0).getDate();
+    const endTargetDay = Math.min(day, endLastDay);
+    const end = new Date(year, month, endTargetDay, 23, 59, 59, 999);
+
+    let startMonth = month - 1;
+    let startYear = year;
+    if (startMonth < 0) { startMonth = 11; startYear--; }
+    
+    const startLastDay = new Date(startYear, startMonth + 1, 0).getDate();
+    const startTargetDay = Math.min(day, startLastDay);
+    const start = new Date(startYear, startMonth, startTargetDay + 1, 0, 0, 0, 0);
+
+    return { start, end };
+};
 
 const Wallet = ({ transactions = [], onAddTransaction, onUpdateTransaction, onDeleteTransaction, accounts = [], onAddAccount, onUpdateAccount, onDeleteAccount, categories = [], privacyMode = false }) => {
 
@@ -34,6 +71,9 @@ const Wallet = ({ transactions = [], onAddTransaction, onUpdateTransaction, onDe
     const [filterAccount, setFilterAccount] = useState('');   // Hesap ID
     const [filterStartDate, setFilterStartDate] = useState(''); // YYYY-MM-DD
     const [filterEndDate, setFilterEndDate] = useState('');     // YYYY-MM-DD
+    const [showAllTransactions, setShowAllTransactions] = useState(false);
+    const [showSearch, setShowSearch] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
 
     // Ensure transactions is an array
     const safeTransactions = transactions || [];
@@ -41,28 +81,8 @@ const Wallet = ({ transactions = [], onAddTransaction, onUpdateTransaction, onDe
     // Helper: Get current period start date for credit cards
     const getCurrentPeriodStart = (statementDay) => {
         const today = new Date();
-        const currentMonth = today.getMonth();
-        const currentYear = today.getFullYear();
-        const day = parseInt(statementDay) || 1;
-
-        // Get the last day of current month
-        const lastDayOfCurrentMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
-        const actualDay = Math.min(day, lastDayOfCurrentMonth);
-
-        // If we haven't passed the statement day this month, use last month's statement day
-        let periodStart;
-        if (today.getDate() < actualDay) {
-            // Use previous month's statement day
-            const prevMonth = currentMonth === 0 ? 11 : currentMonth - 1;
-            const prevYear = currentMonth === 0 ? currentYear - 1 : currentYear;
-            const lastDayOfPrevMonth = new Date(prevYear, prevMonth + 1, 0).getDate();
-            const prevActualDay = Math.min(day, lastDayOfPrevMonth);
-            periodStart = new Date(prevYear, prevMonth, prevActualDay, 0, 0, 0, 0);
-        } else {
-            // Use this month's statement day
-            periodStart = new Date(currentYear, currentMonth, actualDay, 0, 0, 0, 0);
-        }
-        return periodStart;
+        const periodDef = getPeriodForDate(today, statementDay);
+        return getPeriodBounds(periodDef, statementDay).start;
     };
 
     // Helper: Get previous periods for credit card history
@@ -78,30 +98,24 @@ const Wallet = ({ transactions = [], onAddTransaction, onUpdateTransaction, onDe
         if (cardTransactions.length === 0) return [];
 
         const getPeriodStartForDate = (date) => {
-            const d = new Date(date);
-            const day = statementDay;
-            const lastDay = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
-            const actualDay = Math.min(day, lastDay);
-
-            if (d.getDate() < actualDay) {
-                const pm = d.getMonth() === 0 ? 11 : d.getMonth() - 1;
-                const py = d.getMonth() === 0 ? d.getFullYear() - 1 : d.getFullYear();
-                const prevLastDay = new Date(py, pm + 1, 0).getDate();
-                return new Date(py, pm, Math.min(day, prevLastDay), 0, 0, 0, 0);
-            }
-            return new Date(d.getFullYear(), d.getMonth(), actualDay, 0, 0, 0, 0);
+            const periodDef = getPeriodForDate(date, statementDay);
+            return getPeriodBounds(periodDef, statementDay).start;
         };
 
         const getInstallmentContribution = (tx, periodStart) => {
             const iCount = Number(tx.installmentCount) || 1;
             if (iCount <= 1) return 0;
-
             const perInstallment = Number(tx.installmentAmount) || (Number(tx.amount) / iCount);
-            const txPeriodStart = getPeriodStartForDate(tx.date);
-
-            const monthsDiff = (periodStart.getFullYear() - txPeriodStart.getFullYear()) * 12 +
-                              (periodStart.getMonth() - txPeriodStart.getMonth());
-
+            
+            const txPeriodDef = getPeriodForDate(tx.date, statementDay);
+            
+            const d = new Date(periodStart);
+            d.setDate(d.getDate() + 5);
+            const currentPeriodDef = getPeriodForDate(d, statementDay);
+            
+            const monthsDiff = (currentPeriodDef.year - txPeriodDef.year) * 12 +
+                             (currentPeriodDef.month - txPeriodDef.month);
+            
             if (monthsDiff < 0 || monthsDiff >= iCount) return 0;
             return perInstallment;
         };
@@ -149,11 +163,7 @@ const Wallet = ({ transactions = [], onAddTransaction, onUpdateTransaction, onDe
             periodEnd = new Date(periodStart);
             periodEnd.setMilliseconds(-1);
 
-            const prevMonth = periodStart.getMonth() === 0 ? 11 : periodStart.getMonth() - 1;
-            const prevYear = periodStart.getMonth() === 0 ? periodStart.getFullYear() - 1 : periodStart.getFullYear();
-            const lastDayOfMonth = new Date(prevYear, prevMonth + 1, 0).getDate();
-            const actualDay = Math.min(statementDay, lastDayOfMonth);
-            periodStart = new Date(prevYear, prevMonth, actualDay, 0, 0, 0, 0);
+            periodStart = getPeriodStartForDate(periodEnd);
 
             const periodTxs = cardTransactions.filter(t => new Date(t.date) >= periodStart && new Date(t.date) <= periodEnd);
             const periodExpenses = calculatePeriodTotal(periodStart, periodEnd);
@@ -178,29 +188,12 @@ const Wallet = ({ transactions = [], onAddTransaction, onUpdateTransaction, onDe
     const getPaidInstallments = (txDate, statementDay) => {
         const tx = new Date(txDate);
         const today = new Date();
-        const day = parseInt(statementDay) || 1;
 
-        // Count full billing cycles that have passed
-        let count = 0;
-        let checkDate = new Date(tx);
+        const txPeriod = getPeriodForDate(tx, statementDay);
+        const todayPeriod = getPeriodForDate(today, statementDay);
 
-        // Find the first statement day after the transaction
-        let nextStatement = new Date(checkDate.getFullYear(), checkDate.getMonth(), day);
-        if (nextStatement <= checkDate) {
-            nextStatement.setMonth(nextStatement.getMonth() + 1);
-        }
-        // Adjust for months with fewer days
-        const lastDay = new Date(nextStatement.getFullYear(), nextStatement.getMonth() + 1, 0).getDate();
-        if (day > lastDay) nextStatement.setDate(lastDay);
-
-        // Count how many statement days have passed
-        while (nextStatement <= today && count < 100) {
-            count++;
-            nextStatement = new Date(nextStatement.getFullYear(), nextStatement.getMonth() + 1, 1);
-            const md = new Date(nextStatement.getFullYear(), nextStatement.getMonth() + 1, 0).getDate();
-            nextStatement.setDate(Math.min(day, md));
-        }
-        return count;
+        const monthsDiff = (todayPeriod.year - txPeriod.year) * 12 + (todayPeriod.month - txPeriod.month);
+        return Math.max(0, monthsDiff);
     };
 
     // Derived State
@@ -334,12 +327,18 @@ const Wallet = ({ transactions = [], onAddTransaction, onUpdateTransaction, onDe
                 endDate.setHours(23, 59, 59, 999);
                 if (txDate > endDate) return false;
             }
+            // Arama filtresi
+            if (searchQuery) {
+                const query = searchQuery.toLowerCase();
+                const desc = t.description ? t.description.toLowerCase() : '';
+                if (!desc.includes(query)) return false;
+            }
             return true;
         });
-    }, [safeTransactions, filterCategory, filterAccount, filterStartDate, filterEndDate, categories]);
+    }, [safeTransactions, filterCategory, filterAccount, filterStartDate, filterEndDate, searchQuery, categories]);
 
     // Check if any filter is active
-    const hasActiveFilters = filterCategory || filterAccount || filterStartDate || filterEndDate;
+    const hasActiveFilters = filterCategory || filterAccount || filterStartDate || filterEndDate || searchQuery;
 
     // Clear all filters
     const clearFilters = () => {
@@ -347,6 +346,7 @@ const Wallet = ({ transactions = [], onAddTransaction, onUpdateTransaction, onDe
         setFilterAccount('');
         setFilterStartDate('');
         setFilterEndDate('');
+        setSearchQuery('');
     };
 
     // --- Account Handlers ---
@@ -633,7 +633,7 @@ const Wallet = ({ transactions = [], onAddTransaction, onUpdateTransaction, onDe
 
             {/* Edit Account Modal/Form */}
             {editingAccount && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4">
                     <form onSubmit={handleSaveAccount} className="bg-slate-900 p-6 rounded-2xl w-full max-w-sm border border-slate-800">
                         <h3 className="text-lg font-bold text-white mb-4">
                             {editingAccount.type === 'credit_card' ? 'Kredi Kartını Düzenle' : 'Hesabı Düzenle'}
@@ -765,7 +765,7 @@ const Wallet = ({ transactions = [], onAddTransaction, onUpdateTransaction, onDe
 
             {/* Credit Card Period History Modal */}
             {selectedCreditCard && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4">
                     <div className="bg-slate-900 p-6 rounded-2xl w-full max-w-md border border-slate-800 max-h-[80vh] overflow-y-auto">
                         <div className="flex justify-between items-center mb-4">
                             <div>
@@ -1021,7 +1021,7 @@ const Wallet = ({ transactions = [], onAddTransaction, onUpdateTransaction, onDe
 
             {/* Edit Transaction Modal/Form */}
             {editingTransaction && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4">
                     <form onSubmit={handleSaveTransaction} className="bg-slate-900 p-6 rounded-2xl w-full max-w-sm border border-slate-800">
                         <h3 className="text-lg font-bold text-white mb-4">İşlemi Düzenle</h3>
                         <div className="space-y-3">
@@ -1180,163 +1180,303 @@ const Wallet = ({ transactions = [], onAddTransaction, onUpdateTransaction, onDe
                 </div>
             )}
 
-            {/* Transactions List */}
+            {/* Transactions List Main View */}
             <div className="space-y-3">
-                {/* Header with Filter Button */}
                 <div className="flex items-center justify-between">
                     <h3 className="text-lg font-semibold text-white">Son İşlemler</h3>
-                    <button
-                        onClick={() => setShowFilters(!showFilters)}
-                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${showFilters || hasActiveFilters
-                            ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/50'
-                            : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
-                            }`}
-                    >
-                        <Filter className="w-4 h-4" />
-                        Filtre
-                        {hasActiveFilters && (
-                            <span className="ml-1 w-2 h-2 bg-indigo-400 rounded-full"></span>
-                        )}
-                    </button>
                 </div>
 
-                {/* Filter Panel */}
-                {showFilters && (
-                    <div className="p-4 bg-slate-900 rounded-xl border border-slate-800 animate-in fade-in slide-in-from-top-2 space-y-3">
-                        {/* Category Filter */}
-                        <div>
-                            <label className="text-xs text-slate-400 block mb-1">Kategori</label>
-                            <select
-                                value={filterCategory}
-                                onChange={(e) => setFilterCategory(e.target.value)}
-                                className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-white text-sm focus:outline-none focus:border-indigo-500"
-                            >
-                                <option value="">Tüm Kategoriler</option>
-                                {categories.map(cat => (
-                                    <option key={cat.id} value={cat.id}>{cat.name}</option>
-                                ))}
-                            </select>
-                        </div>
+                {safeTransactions.length === 0 ? (
+                    <div className="text-center py-10 text-slate-500">Henüz işlem yok.</div>
+                ) : (
+                    <>
+                        {safeTransactions
+                            .sort((a, b) => new Date(b.date) - new Date(a.date))
+                            .slice(0, 5)
+                            .map((t) => {
+                                const account = accounts.find(a => a.id === t.accountId);
+                                const toAccount = t.toAccountId ? accounts.find(a => a.id === t.toAccountId) : null;
 
-                        {/* Account Filter */}
-                        <div>
-                            <label className="text-xs text-slate-400 block mb-1">Hesap</label>
-                            <select
-                                value={filterAccount}
-                                onChange={(e) => setFilterAccount(e.target.value)}
-                                className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-white text-sm focus:outline-none focus:border-indigo-500"
-                            >
-                                <option value="">Tüm Hesaplar</option>
-                                {accounts.map(acc => (
-                                    <option key={acc.id} value={acc.id}>{acc.name}</option>
-                                ))}
-                            </select>
-                        </div>
+                                let iconName = 'Wallet';
+                                if (t.type === 'transfer') {
+                                    iconName = 'ArrowRightLeft';
+                                } else {
+                                    const mainCat = categories.find(c => c.subcategories.includes(t.category) || c.name === t.category);
+                                    if (mainCat) iconName = mainCat.icon;
+                                }
 
-                        {/* Date Range Filter */}
-                        <div className="grid grid-cols-2 gap-2">
-                            <div>
-                                <label className="text-xs text-slate-400 block mb-1">Başlangıç</label>
-                                <input
-                                    type="date"
-                                    value={filterStartDate}
-                                    onChange={(e) => setFilterStartDate(e.target.value)}
-                                    className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-white text-sm focus:outline-none focus:border-indigo-500"
-                                />
-                            </div>
-                            <div>
-                                <label className="text-xs text-slate-400 block mb-1">Bitiş</label>
-                                <input
-                                    type="date"
-                                    value={filterEndDate}
-                                    onChange={(e) => setFilterEndDate(e.target.value)}
-                                    className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-white text-sm focus:outline-none focus:border-indigo-500"
-                                />
-                            </div>
-                        </div>
-
-                        {/* Clear Filters Button */}
-                        {hasActiveFilters && (
-                            <button
-                                onClick={clearFilters}
-                                className="w-full py-2 text-sm text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-lg transition-colors"
+                                return (
+                                    <div key={t.id} className="flex items-center justify-between p-4 bg-slate-900 rounded-xl border border-slate-800 group">
+                                        <div className="flex items-center gap-3 overflow-hidden">
+                                            <div className={`p-2 rounded-full shrink-0 ${t.type === 'income' ? 'bg-emerald-500/10 text-emerald-500' : t.type === 'transfer' ? 'bg-blue-500/10 text-blue-500' : 'bg-rose-500/10 text-rose-500'}`}>
+                                                {t.type === 'transfer' ? <ArrowRightLeft className="w-5 h-5" /> : (() => {
+                                                    const Icon = getCategoryIcon(iconName);
+                                                    return <Icon className="w-5 h-5" />;
+                                                })()}
+                                            </div>
+                                            <div className="min-w-0">
+                                                <div className="font-medium text-white truncate">{t.category || (t.type === 'transfer' ? 'Transfer' : 'İşlem')}</div>
+                                                <div className="text-xs text-slate-400 truncate">
+                                                    {new Date(t.date).toLocaleDateString('tr-TR')}
+                                                    {account && <span> • {account.name} {toAccount ? `→ ${toAccount.name}` : ''}</span>}
+                                                </div>
+                                                {t.description && (
+                                                    <div className="text-[11px] text-slate-500 mt-0.5 truncate">{t.description}</div>
+                                                )}
+                                                {t.installmentCount > 1 && (
+                                                    <div className="text-[10px] text-purple-400 mt-0.5">
+                                                        {t.installmentCount} Taksit • {privacyMode ? '₺***' : new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(t.installmentAmount)}/ay
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-3 ml-2 shrink-0">
+                                            <span className={`font-semibold whitespace-nowrap ${t.type === 'income' ? 'text-emerald-400' : t.type === 'transfer' ? 'text-blue-400' : 'text-rose-400'}`}>
+                                                {t.type === 'income' ? '+' : t.type === 'transfer' ? '' : '-'}{privacyMode ? '₺***' : new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(t.amount)}
+                                            </span>
+                                            <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <button onClick={() => handleEditTransaction(t)} className="text-slate-600 hover:text-indigo-400 transition-colors">
+                                                    <Pencil className="w-4 h-4" />
+                                                </button>
+                                                <button onClick={() => {
+                                                    if (confirm('Bu işlemi silmek istediğinize emin misiniz?')) {
+                                                        onDeleteTransaction(t.id);
+                                                    }
+                                                }} className="text-slate-600 hover:text-rose-500 transition-colors">
+                                                    <Trash2 className="w-4 h-4" />
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        
+                        {safeTransactions.length > 5 && (
+                            <button 
+                                onClick={() => setShowAllTransactions(true)}
+                                className="w-full py-3 bg-slate-800/50 hover:bg-slate-800 text-slate-300 rounded-xl border border-slate-700/50 transition-colors font-medium text-sm flex justify-center items-center gap-2 mt-2"
                             >
-                                Filtreleri Temizle
+                                Daha fazla göster ({safeTransactions.length - 5})
                             </button>
                         )}
-
-                        {/* Filter Summary */}
-                        <div className="text-xs text-slate-500 text-center">
-                            {filteredTransactions.length} / {safeTransactions.length} işlem gösteriliyor
-                        </div>
-                    </div>
-                )}
-
-                {filteredTransactions.length === 0 ? (
-                    <div className="text-center py-10 text-slate-500">
-                        {hasActiveFilters ? 'Filtreye uygun işlem bulunamadı.' : 'Henüz işlem yok.'}
-                    </div>
-                ) : (
-                    filteredTransactions.sort((a, b) => new Date(b.date) - new Date(a.date)).map((t) => {
-                        const account = accounts.find(a => a.id === t.accountId);
-                        const toAccount = t.toAccountId ? accounts.find(a => a.id === t.toAccountId) : null;
-
-                        // Find category icon
-                        let iconName = 'Wallet';
-                        if (t.type === 'transfer') {
-                            iconName = 'ArrowRightLeft';
-                        } else {
-                            const mainCat = categories.find(c => c.subcategories.includes(t.category) || c.name === t.category);
-                            if (mainCat) iconName = mainCat.icon;
-                        }
-
-                        return (
-                            <div key={t.id} className="flex items-center justify-between p-4 bg-slate-900 rounded-xl border border-slate-800 group">
-                                <div className="flex items-center gap-3 overflow-hidden">
-                                    <div className={`p-2 rounded-full shrink-0 ${t.type === 'income' ? 'bg-emerald-500/10 text-emerald-500' : t.type === 'transfer' ? 'bg-blue-500/10 text-blue-500' : 'bg-rose-500/10 text-rose-500'}`}>
-                                        {t.type === 'transfer' ? <ArrowRightLeft className="w-5 h-5" /> : (() => {
-                                            const Icon = getCategoryIcon(iconName);
-                                            return <Icon className="w-5 h-5" />;
-                                        })()}
-                                    </div>
-                                    <div className="min-w-0">
-                                        <div className="font-medium text-white truncate">{t.category || (t.type === 'transfer' ? 'Transfer' : 'İşlem')}</div>
-                                        <div className="text-xs text-slate-400 truncate">
-                                            {new Date(t.date).toLocaleDateString('tr-TR')}
-                                            {account && <span> • {account.name} {toAccount ? `→ ${toAccount.name}` : ''}</span>}
-                                        </div>
-                                        {t.description && (
-                                            <div className="text-[11px] text-slate-500 mt-0.5 truncate">{t.description}</div>
-                                        )}
-                                        {t.installmentCount > 1 && (
-                                            <div className="text-[10px] text-purple-400 mt-0.5">
-                                                {t.installmentCount} Taksit • {privacyMode ? '₺***' : new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(t.installmentAmount)}/ay
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                                <div className="flex items-center gap-3 ml-2 shrink-0">
-                                    <span className={`font-semibold whitespace-nowrap ${t.type === 'income' ? 'text-emerald-400' : t.type === 'transfer' ? 'text-blue-400' : 'text-rose-400'}`}>
-                                        {t.type === 'income' ? '+' : t.type === 'transfer' ? '' : '-'}{privacyMode ? '₺***' : new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(t.amount)}
-                                    </span>
-                                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <button onClick={() => handleEditTransaction(t)} className="text-slate-600 hover:text-indigo-400 transition-colors">
-                                            <Pencil className="w-4 h-4" />
-                                        </button>
-                                        <button onClick={() => {
-                                            if (confirm('Bu işlemi silmek istediğinize emin misiniz?')) {
-                                                onDeleteTransaction(t.id);
-                                            }
-                                        }} className="text-slate-600 hover:text-rose-500 transition-colors">
-                                            <Trash2 className="w-4 h-4" />
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        );
-                    })
+                    </>
                 )}
             </div>
+
+            {/* All Transactions Modal */}
+            {showAllTransactions && (
+                <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center">
+                    <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowAllTransactions(false)} />
+                    <div className="relative bg-slate-900 w-full sm:max-w-lg sm:rounded-2xl rounded-t-2xl h-[85vh] flex flex-col border border-slate-700/50 animate-in fade-in slide-in-from-bottom-4 duration-300">
+                        <div className="flex items-center justify-between p-4 border-b border-slate-700/50">
+                            <h2 className="text-lg font-bold text-white">Tüm İşlemler</h2>
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={() => setShowSearch(!showSearch)}
+                                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${showSearch || searchQuery
+                                        ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/50'
+                                        : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
+                                        }`}
+                                >
+                                    <Search className="w-4 h-4" />
+                                    Ara
+                                    {searchQuery && (
+                                        <span className="ml-1 w-2 h-2 bg-indigo-400 rounded-full"></span>
+                                    )}
+                                </button>
+                                <button
+                                    onClick={() => setShowFilters(!showFilters)}
+                                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${showFilters || (hasActiveFilters && !searchQuery)
+                                        ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/50'
+                                        : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
+                                        }`}
+                                >
+                                    <Filter className="w-4 h-4" />
+                                    Filtre
+                                    {(hasActiveFilters && !searchQuery) && (
+                                        <span className="ml-1 w-2 h-2 bg-indigo-400 rounded-full"></span>
+                                    )}
+                                </button>
+                                <button onClick={() => setShowAllTransactions(false)} className="p-2 text-slate-400 hover:text-white transition-colors">
+                                    <X className="w-5 h-5" />
+                                </button>
+                            </div>
+                        </div>
+
+                        <div className="flex-1 overflow-y-auto p-4 space-y-3">
+                            {/* Search Panel */}
+                            {showSearch && (
+                                <div className="p-4 bg-slate-800/50 rounded-xl border border-slate-700/50 mb-4">
+                                    <div className="relative">
+                                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                                        <input
+                                            type="text"
+                                            placeholder="Açıklamalarda ara..."
+                                            value={searchQuery}
+                                            onChange={(e) => setSearchQuery(e.target.value)}
+                                            className="w-full bg-slate-900 border border-slate-700 rounded-lg py-2.5 pl-10 pr-4 text-white text-sm focus:outline-none focus:border-indigo-500"
+                                            autoFocus
+                                        />
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Filter Panel */}
+                            {showFilters && (
+                                <div className="p-4 bg-slate-800/50 rounded-xl border border-slate-700/50 space-y-3 mb-4">
+                                    {/* Category Filter */}
+                                    <div>
+                                        <label className="text-xs text-slate-400 block mb-1">Kategori</label>
+                                        <select
+                                            value={filterCategory}
+                                            onChange={(e) => setFilterCategory(e.target.value)}
+                                            className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-white text-sm focus:outline-none focus:border-indigo-500"
+                                        >
+                                            <option value="">Tüm Kategoriler</option>
+                                            {categories.map(cat => (
+                                                <option key={cat.id} value={cat.id}>{cat.name}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+
+                                    {/* Account Filter */}
+                                    <div>
+                                        <label className="text-xs text-slate-400 block mb-1">Hesap</label>
+                                        <select
+                                            value={filterAccount}
+                                            onChange={(e) => setFilterAccount(e.target.value)}
+                                            className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-white text-sm focus:outline-none focus:border-indigo-500"
+                                        >
+                                            <option value="">Tüm Hesaplar</option>
+                                            {accounts.map(acc => (
+                                                <option key={acc.id} value={acc.id}>{acc.name}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+
+                                    {/* Date Range Filter */}
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <div>
+                                            <label className="text-xs text-slate-400 block mb-1">Başlangıç</label>
+                                            <input
+                                                type="date"
+                                                value={filterStartDate}
+                                                onChange={(e) => setFilterStartDate(e.target.value)}
+                                                className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-white text-sm focus:outline-none focus:border-indigo-500"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="text-xs text-slate-400 block mb-1">Bitiş</label>
+                                            <input
+                                                type="date"
+                                                value={filterEndDate}
+                                                onChange={(e) => setFilterEndDate(e.target.value)}
+                                                className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-white text-sm focus:outline-none focus:border-indigo-500"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    {/* Clear Filters Button */}
+                                    {hasActiveFilters && (
+                                        <button
+                                            onClick={clearFilters}
+                                            className="w-full py-2 text-sm text-slate-400 hover:text-white bg-slate-700 hover:bg-slate-600 rounded-lg transition-colors"
+                                        >
+                                            Filtreleri Temizle
+                                        </button>
+                                    )}
+
+                                    <div className="text-xs text-slate-500 text-center">
+                                        {filteredTransactions.length} / {safeTransactions.length} işlem gösteriliyor
+                                    </div>
+                                </div>
+                            )}
+
+                            {filteredTransactions.length === 0 ? (
+                                <div className="text-center py-10 text-slate-500">
+                                    {hasActiveFilters ? 'Filtreye uygun işlem bulunamadı.' : 'Henüz işlem yok.'}
+                                </div>
+                            ) : (
+                                (() => {
+                                    const groupedTxs = {};
+                                    filteredTransactions.sort((a, b) => new Date(b.date) - new Date(a.date)).forEach(t => {
+                                        const dateStr = new Date(t.date).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' });
+                                        if (!groupedTxs[dateStr]) groupedTxs[dateStr] = [];
+                                        groupedTxs[dateStr].push(t);
+                                    });
+
+                                    return Object.entries(groupedTxs).map(([dateLabel, txs]) => (
+                                        <div key={dateLabel} className="space-y-2 mb-4">
+                                            <div className="py-1.5 border-b border-slate-800">
+                                                <h4 className="text-xs font-semibold text-slate-400">{dateLabel}</h4>
+                                            </div>
+                                            {txs.map((t) => {
+                                                const account = accounts.find(a => a.id === t.accountId);
+                                                const toAccount = t.toAccountId ? accounts.find(a => a.id === t.toAccountId) : null;
+
+                                                let iconName = 'Wallet';
+                                                if (t.type === 'transfer') {
+                                                    iconName = 'ArrowRightLeft';
+                                                } else {
+                                                    const mainCat = categories.find(c => c.subcategories.includes(t.category) || c.name === t.category);
+                                                    if (mainCat) iconName = mainCat.icon;
+                                                }
+
+                                                return (
+                                                    <div key={t.id} className="flex items-center justify-between p-4 bg-slate-900 rounded-xl border border-slate-800 group">
+                                                        <div className="flex items-center gap-3 overflow-hidden">
+                                                            <div className={`p-2 rounded-full shrink-0 ${t.type === 'income' ? 'bg-emerald-500/10 text-emerald-500' : t.type === 'transfer' ? 'bg-blue-500/10 text-blue-500' : 'bg-rose-500/10 text-rose-500'}`}>
+                                                                {t.type === 'transfer' ? <ArrowRightLeft className="w-5 h-5" /> : (() => {
+                                                                    const Icon = getCategoryIcon(iconName);
+                                                                    return <Icon className="w-5 h-5" />;
+                                                                })()}
+                                                            </div>
+                                                            <div className="min-w-0">
+                                                                <div className="font-medium text-white truncate">{t.category || (t.type === 'transfer' ? 'Transfer' : 'İşlem')}</div>
+                                                                <div className="text-xs text-slate-400 truncate">
+                                                                    {account && <span>{account.name} {toAccount ? `→ ${toAccount.name}` : ''}</span>}
+                                                                </div>
+                                                                {t.description && (
+                                                                    <div className="text-[11px] text-slate-500 mt-0.5 truncate">{t.description}</div>
+                                                                )}
+                                                                {t.installmentCount > 1 && (
+                                                                    <div className="text-[10px] text-purple-400 mt-0.5">
+                                                                        {t.installmentCount} Taksit • {privacyMode ? '₺***' : new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(t.installmentAmount)}/ay
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                        <div className="flex items-center gap-3 ml-2 shrink-0">
+                                                            <span className={`font-semibold whitespace-nowrap ${t.type === 'income' ? 'text-emerald-400' : t.type === 'transfer' ? 'text-blue-400' : 'text-rose-400'}`}>
+                                                                {t.type === 'income' ? '+' : t.type === 'transfer' ? '' : '-'}{privacyMode ? '₺***' : new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(t.amount)}
+                                                            </span>
+                                                            <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                                <button onClick={() => {
+                                                                    setShowAllTransactions(false);
+                                                                    handleEditTransaction(t);
+                                                                }} className="text-slate-600 hover:text-indigo-400 transition-colors">
+                                                                    <Pencil className="w-4 h-4" />
+                                                                </button>
+                                                                <button onClick={() => {
+                                                                    if (confirm('Bu işlemi silmek istediğinize emin misiniz?')) {
+                                                                        onDeleteTransaction(t.id);
+                                                                    }
+                                                                }} className="text-slate-600 hover:text-rose-500 transition-colors">
+                                                                    <Trash2 className="w-4 h-4" />
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    ));
+                                })()
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

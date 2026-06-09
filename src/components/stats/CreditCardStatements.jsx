@@ -2,6 +2,43 @@ import React, { useMemo, useState } from 'react';
 import { CreditCard, ChevronDown, ChevronRight, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { formatCurrency } from '../../utils/formatters';
 
+const getPeriodForDate = (date, statementDay) => {
+    const d = new Date(date);
+    const day = parseInt(statementDay) || 1;
+    const m = d.getMonth();
+    const y = d.getFullYear();
+    const lastDay = new Date(y, m + 1, 0).getDate();
+    const actualDay = Math.min(day, lastDay);
+
+    if (d.getDate() <= actualDay) {
+        return { month: m, year: y };
+    } else {
+        let nextM = m + 1;
+        let nextY = y;
+        if (nextM > 11) { nextM = 0; nextY++; }
+        return { month: nextM, year: nextY };
+    }
+};
+
+const getPeriodBounds = (periodDef, statementDay) => {
+    const day = parseInt(statementDay) || 1;
+    const { month, year } = periodDef;
+
+    const endLastDay = new Date(year, month + 1, 0).getDate();
+    const endTargetDay = Math.min(day, endLastDay);
+    const end = new Date(year, month, endTargetDay, 23, 59, 59, 999);
+
+    let startMonth = month - 1;
+    let startYear = year;
+    if (startMonth < 0) { startMonth = 11; startYear--; }
+    
+    const startLastDay = new Date(startYear, startMonth + 1, 0).getDate();
+    const startTargetDay = Math.min(day, startLastDay);
+    const start = new Date(startYear, startMonth, startTargetDay + 1, 0, 0, 0, 0);
+
+    return { start, end };
+};
+
 const CreditCardStatements = ({ transactions = [], accounts = [], privacyMode = false }) => {
     const [expandedCard, setExpandedCard] = useState(null);
 
@@ -9,43 +46,30 @@ const CreditCardStatements = ({ transactions = [], accounts = [], privacyMode = 
 
     // Find the period that contains a given date
     const getPeriodStartForDate = (date, statementDay) => {
-        const d = new Date(date);
-        const day = parseInt(statementDay) || 1;
-        const lastDay = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
-        const actualDay = Math.min(day, lastDay);
-
-        if (d.getDate() < actualDay) {
-            // We're before the statement day, so period started last month
-            const pm = d.getMonth() === 0 ? 11 : d.getMonth() - 1;
-            const py = d.getMonth() === 0 ? d.getFullYear() - 1 : d.getFullYear();
-            const prevLastDay = new Date(py, pm + 1, 0).getDate();
-            return new Date(py, pm, Math.min(day, prevLastDay), 0, 0, 0, 0);
-        }
-        return new Date(d.getFullYear(), d.getMonth(), actualDay, 0, 0, 0, 0);
+        const periodDef = getPeriodForDate(date, statementDay);
+        return getPeriodBounds(periodDef, statementDay).start;
     };
 
     // Get the end date for a period that starts on periodStart
     const getPeriodEnd = (periodStart, statementDay) => {
-        const day = parseInt(statementDay) || 1;
-        let endMonth = periodStart.getMonth() + 1;
-        let endYear = periodStart.getFullYear();
-        if (endMonth > 11) { endMonth -= 12; endYear++; }
-        const lastDayOfEndMonth = new Date(endYear, endMonth + 1, 0).getDate();
-        const actualEndDay = Math.min(day, lastDayOfEndMonth);
-        const periodEnd = new Date(endYear, endMonth, actualEndDay, 0, 0, 0, 0);
-        periodEnd.setMilliseconds(-1);
-        return periodEnd;
+        const d = new Date(periodStart);
+        d.setDate(d.getDate() + 5);
+        const periodDef = getPeriodForDate(d, statementDay);
+        return getPeriodBounds(periodDef, statementDay).end;
     };
 
     // Move a period start forward or backward by N months
     const shiftPeriod = (periodStart, monthDelta, statementDay) => {
-        const day = parseInt(statementDay) || 1;
-        let newMonth = periodStart.getMonth() + monthDelta;
-        let newYear = periodStart.getFullYear();
+        const d = new Date(periodStart);
+        d.setDate(d.getDate() + 5);
+        const periodDef = getPeriodForDate(d, statementDay);
+        
+        let newMonth = periodDef.month + monthDelta;
+        let newYear = periodDef.year;
         while (newMonth < 0) { newMonth += 12; newYear--; }
         while (newMonth > 11) { newMonth -= 12; newYear++; }
-        const lastDay = new Date(newYear, newMonth + 1, 0).getDate();
-        return new Date(newYear, newMonth, Math.min(day, lastDay), 0, 0, 0, 0);
+        
+        return getPeriodBounds({ month: newMonth, year: newYear }, statementDay).start;
     };
 
     // Get installment contribution for a period
@@ -54,11 +78,15 @@ const CreditCardStatements = ({ transactions = [], accounts = [], privacyMode = 
         if (iCount <= 1) return 0;
 
         const perInstallment = Number(tx.installmentAmount) || (Number(tx.amount) / iCount);
-        const txPeriodStart = getPeriodStartForDate(tx.date, statementDay);
+        
+        const txPeriodDef = getPeriodForDate(tx.date, statementDay);
+        
+        const d = new Date(periodStart);
+        d.setDate(d.getDate() + 5);
+        const currentPeriodDef = getPeriodForDate(d, statementDay);
 
-        // How many periods between the tx period and this period?
-        const monthsDiff = (periodStart.getFullYear() - txPeriodStart.getFullYear()) * 12 +
-                          (periodStart.getMonth() - txPeriodStart.getMonth());
+        const monthsDiff = (currentPeriodDef.year - txPeriodDef.year) * 12 +
+                          (currentPeriodDef.month - txPeriodDef.month);
 
         if (monthsDiff < 0 || monthsDiff >= iCount) return 0;
         return perInstallment;
@@ -67,17 +95,25 @@ const CreditCardStatements = ({ transactions = [], accounts = [], privacyMode = 
     // Find how many future periods we need for installments
     const getMaxFuturePeriods = (cardTxs, currentPeriodStart, statementDay) => {
         let maxFuture = 0;
+        
+        const d = new Date(currentPeriodStart);
+        d.setDate(d.getDate() + 5);
+        const currentPeriodDef = getPeriodForDate(d, statementDay);
+        
         cardTxs.forEach(t => {
             const iCount = Number(t.installmentCount) || 1;
             if (iCount <= 1) return;
 
-            const txPeriodStart = getPeriodStartForDate(t.date, statementDay);
-            const monthsSinceTx = (currentPeriodStart.getFullYear() - txPeriodStart.getFullYear()) * 12 +
-                                  (currentPeriodStart.getMonth() - txPeriodStart.getMonth());
-            const remainingInstallments = iCount - monthsSinceTx - 1; // -1 for current period
-            if (remainingInstallments > maxFuture) maxFuture = remainingInstallments;
+            const txPeriodDef = getPeriodForDate(t.date, statementDay);
+            const monthsSinceTx = (currentPeriodDef.year - txPeriodDef.year) * 12 +
+                                  (currentPeriodDef.month - txPeriodDef.month);
+
+            const remaining = iCount - monthsSinceTx - 1;
+            if (remaining > maxFuture) {
+                maxFuture = remaining;
+            }
         });
-        return maxFuture;
+        return Math.min(maxFuture, 12); // Cap at 12 future periods
     };
 
     // Build period data
