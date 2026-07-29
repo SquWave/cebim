@@ -89,8 +89,12 @@ const Portfolio = ({ assets, onAddAsset, onUpdateAsset, onDeleteAsset, privacyMo
                 if (assetName.includes('ALTIN') || assetName.includes('GOLD')) newPrice = rates.GOLD;
                 else if (assetName.includes('GÜMÜŞ') || assetName.includes('GUMUS') || assetName.includes('SILVER')) newPrice = rates.SILVER;
             }
-            else if ((asset.type === 'stock' || asset.type === 'fund') && specificPrices[assetName]) {
-                newPrice = specificPrices[assetName];
+            else if (asset.type === 'stock' || asset.type === 'fund') {
+                const sp = rates.specificPrices || specificPrices;
+                const cleanName = assetName.trim();
+                if (sp && sp[cleanName]) {
+                    newPrice = sp[cleanName];
+                }
             }
 
             // Get current price from periods first (period-aware), fallback to lots

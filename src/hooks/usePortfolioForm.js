@@ -60,11 +60,11 @@ export const usePortfolioForm = ({ assets, onAddAsset, onUpdateAsset, rates }) =
                 }
             } else if (type === 'fund') {
                 const fundResults = TEFAS_FUNDS.filter(f =>
-                    f.code.includes(query) || f.name.includes(query)
+                    f.code.includes(query)
                 ).slice(0, 8);
                 setSuggestions(fundResults.map(f => ({
                     code: f.code,
-                    shortName: f.name
+                    name: 'Yatırım Fonu'
                 })));
                 setShowSuggestions(fundResults.length > 0);
             }
