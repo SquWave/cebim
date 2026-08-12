@@ -120,23 +120,32 @@ app.get('/api/fund/:code', async (req, res) => {
             return res.json(cache.funds[fundCode].data);
         }
 
-        console.log(`[Backend] Fetching fund data for ${fundCode}...`);
-        const response = await fetch(`https://www.tefas.gov.tr/tr/fon-detayli-analiz/${fundCode}`);
+        console.log(`[Backend] Fetching official TEFAS JSON API for ${fundCode}...`);
+        const response = await fetch('https://www.tefas.gov.tr/api/funds/fonFiyatBilgiGetir', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json, text/plain, */*',
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36'
+            },
+            body: JSON.stringify({ fonKodu: fundCode, dil: 'TR', periyod: 1 })
+        });
+
         if (!response.ok) {
-            return res.status(response.status).json({ error: 'Failed to fetch from TEFAS' });
-        }
-        const text = await response.text();
-
-        const primaryRegex = /Son Fiyat \(TL\)<\/p>.*?<p[^>]*>([\d,\.]+)<\/p>/s;
-        const fallbackRegex = /Son Fiyat.*?([\d]{1,6}[\,\.][\d]{2,8})/s;
-        const match = text.match(primaryRegex) || text.match(fallbackRegex);
-
-        if (!match || !match[1]) {
-            return res.status(404).json({ error: 'Price data not found in HTML' });
+            return res.status(response.status).json({ error: 'Failed to fetch from TEFAS JSON API' });
         }
 
-        const lastPrice = parseFloat(match[1].replace(/\./g, '').replace(',', '.'));
-        console.log(`[Backend] Found price for ${fundCode}: ${lastPrice}`);
+        const data = await response.json();
+        const list = data.resultList || [];
+
+        if (list.length === 0) {
+            return res.status(404).json({ error: `Fund price not found for ${fundCode}` });
+        }
+
+        const latestEntry = list[list.length - 1];
+        const lastPrice = typeof latestEntry.fiyat === 'number' ? latestEntry.fiyat : parseFloat(latestEntry.fiyat);
+
+        console.log(`[Backend] Found price for ${fundCode}: ${lastPrice} (${latestEntry.tarih})`);
 
         const responseData = {
             code: fundCode,
