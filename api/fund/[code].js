@@ -46,7 +46,11 @@ export default async function handler(req, res) {
         const match = text.match(primaryRegex) || text.match(fallbackRegex);
 
         if (!match || !match[1]) {
-            return res.status(404).json({ error: 'Price data not found in HTML' });
+            return res.status(404).json({
+                error: 'Price data not found in HTML',
+                htmlLength: text.length,
+                htmlSnippet: text.slice(0, 500)
+            });
         }
 
         // Convert Turkish locale number formatting (e.g., 15,033866 to 15.033866 or 1.234,56 to 1234.56)
