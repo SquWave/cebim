@@ -224,17 +224,6 @@ const Portfolio = ({ assets, onAddAsset, onUpdateAsset, onDeleteAsset, privacyMo
             {/* Market Rates Ticker */}
             <MarketRatesTicker rates={rates} />
 
-            {/* Bulk Update Action */}
-            {rates && assets.length > 0 && (
-                <button
-                    onClick={updateAssetPrices}
-                    className="w-full mb-6 py-2 px-4 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 rounded-lg text-sm font-medium flex items-center justify-center gap-2 transition-colors border border-emerald-500/20"
-                >
-                    <ArrowUpRight className="w-4 h-4" />
-                    Portföy Fiyatlarını Güncelle
-                </button>
-            )}
-
             {isAdding && (
                 <form onSubmit={handleSubmit} className="mb-6 p-4 bg-slate-900 rounded-xl border border-slate-800 animate-in fade-in slide-in-from-top-4 relative">
                     <div className="grid grid-cols-4 gap-2 mb-4">
