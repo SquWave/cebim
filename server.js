@@ -121,16 +121,7 @@ app.get('/api/fund/:code', async (req, res) => {
         }
 
         console.log(`[Backend] Fetching fund data for ${fundCode}...`);
-        const response = await fetch(`https://www.tefas.gov.tr/tr/fon-detayli-analiz/${fundCode}`, {
-            headers: {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36',
-                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
-                'Accept-Language': 'tr-TR,tr;q=0.9,en-US;q=0.8,en;q=0.7',
-                'Cache-Control': 'no-cache',
-                'Pragma': 'no-cache',
-                'Referer': 'https://www.tefas.gov.tr/'
-            }
-        });
+        const response = await fetch(`https://www.tefas.gov.tr/tr/fon-detayli-analiz/${fundCode}`);
         if (!response.ok) {
             return res.status(response.status).json({ error: 'Failed to fetch from TEFAS' });
         }

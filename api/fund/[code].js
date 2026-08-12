@@ -1,5 +1,7 @@
 // Vercel Serverless Function for TEFAS Fund Data (Dynamic Route)
 
+const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbykSRAhMSes5cszsaBnheKQR8rclBZ9CPuI0PJrPw4DLi2sOJGyKZkC_Ma7W80emBla/exec';
+
 export default async function handler(req, res) {
     // Enable CORS
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -18,45 +20,43 @@ export default async function handler(req, res) {
     }
 
     try {
-        console.log(`[Serverless] Fetching fund data for ${fundCode}...`);
+        let lastPrice = null;
 
-        // Send realistic browser headers to bypass TEFAS bot protection on Vercel
-        const response = await fetch(`https://www.tefas.gov.tr/tr/fon-detayli-analiz/${fundCode}`, {
-            headers: {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36',
-                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
-                'Accept-Language': 'tr-TR,tr;q=0.9,en-US;q=0.8,en;q=0.7',
-                'Cache-Control': 'no-cache',
-                'Pragma': 'no-cache',
-                'Referer': 'https://www.tefas.gov.tr/'
+        // 1. Try Google Apps Script Proxy first
+        try {
+            console.log(`[Serverless] Fetching fund ${fundCode} via Google Script Proxy...`);
+            const pRes = await fetch(`${GOOGLE_SCRIPT_URL}?code=${fundCode}`);
+            if (pRes.ok) {
+                const pData = await pRes.json();
+                if (pData && pData.price) {
+                    lastPrice = pData.price;
+                    console.log(`[Serverless] Found price via Proxy for ${fundCode}: ${lastPrice}`);
+                }
             }
-        });
-
-        if (!response.ok) {
-            return res.status(response.status).json({ error: 'Failed to fetch from TEFAS' });
+        } catch (e) {
+            console.warn('[Serverless] Proxy fetch failed:', e.message);
         }
 
-        const text = await response.text();
-
-        // Primary regex pattern for TEFAS Next.js HTML structure
-        const primaryRegex = /Son Fiyat \(TL\)<\/p>.*?<p[^>]*>([\d,\.]+)<\/p>/s;
-        // Fallback regex pattern in case layout or spacing changes slightly
-        const fallbackRegex = /Son Fiyat.*?([\d]{1,6}[\,\.][\d]{2,8})/s;
-
-        const match = text.match(primaryRegex) || text.match(fallbackRegex);
-
-        if (!match || !match[1]) {
-            return res.status(404).json({
-                error: 'Price data not found in HTML',
-                htmlLength: text.length,
-                htmlSnippet: text.slice(0, 500)
-            });
+        // 2. Fallback to direct TEFAS fetch if proxy failed
+        if (!lastPrice) {
+            console.log(`[Serverless] Proxy failed, fallback to direct TEFAS fetch for ${fundCode}...`);
+            const response = await fetch(`https://www.tefas.gov.tr/FonAnaliz.aspx?FonKod=${fundCode}`);
+            if (response.ok) {
+                const text = await response.text();
+                const idx = text.indexOf('Son Fiyat');
+                if (idx !== -1) {
+                    const snippet = text.substring(idx, idx + 600);
+                    const match = snippet.match(/([\d\.]+,[\d]+)/);
+                    if (match && match[1]) {
+                        lastPrice = parseFloat(match[1].replace(/\./g, '').replace(',', '.'));
+                    }
+                }
+            }
         }
 
-        // Convert Turkish locale number formatting (e.g., 15,033866 to 15.033866 or 1.234,56 to 1234.56)
-        const lastPrice = parseFloat(match[1].replace(/\./g, '').replace(',', '.'));
-
-        console.log(`[Serverless] Found price for ${fundCode}: ${lastPrice}`);
+        if (!lastPrice) {
+            return res.status(404).json({ error: 'Price data not found in HTML' });
+        }
 
         const responseData = {
             code: fundCode,
@@ -64,7 +64,7 @@ export default async function handler(req, res) {
             lastUpdated: new Date().toISOString()
         };
 
-        // Set cache headers (10 minutes - ensures fresh prices after daily update)
+        // Set cache headers (10 minutes)
         res.setHeader('Cache-Control', 's-maxage=600, stale-while-revalidate=1200');
 
         return res.status(200).json(responseData);
